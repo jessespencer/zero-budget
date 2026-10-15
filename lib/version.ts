@@ -12,7 +12,7 @@ export const AUTHOR_URL = "https://jessedestroys.com";
 // About dialog. A fork points these at its own repo and keeps the rest.
 export const REPO_URL = "https://github.com/jessespencer/zero-budget";
 export const LICENSE_NAME = "GNU AGPL v3";
-export const COPYRIGHT = "© 2026 jessedestroys.com";
+export const COPYRIGHT = "© 2026 Jesse Spencer";
 
 /** The release page for the running build, or the releases list for a dev build. */
 export function releaseUrl(version: string = APP_VERSION): string {
