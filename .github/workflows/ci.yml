@@ -10,6 +10,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # The repo is public: fail on private IPs, emails, tailnet hosts, home
+      # paths or DB/env files in what this push or PR adds — even if the
+      # pre-commit hook was skipped. (The personal denylist only runs locally.)
+      - name: Privacy scan
+        run: |
+          if [ "${{ github.event_name }}" = pull_request ]; then
+            base="origin/${{ github.base_ref }}"
+          else
+            base="${{ github.event.before }}"
+          fi
+          if [ -z "$base" ] || [ "$base" = 0000000000000000000000000000000000000000 ] \
+             || ! git rev-parse -q --verify "$base^{commit}" >/dev/null; then
+            echo "No earlier commit to compare against; skipping."
+            exit 0
+          fi
+          bash .claude/skills/pr/scripts/scan.sh "$base"
 
       - uses: actions/setup-node@v4
         with:

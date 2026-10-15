@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 #
 # Refuse to commit the database, env files, or anything else carrying real
-# financial data.
+# financial data — and anything personal: this repo is public, so a commit is
+# published the moment it's pushed.
 #
 # .gitignore already covers most of these paths — this hook is the backstop for
-# `git add -f` and for paths that slip the ignore patterns. It matters because a
-# committed zero.db is unrecoverable in practice, and is exactly why this repo
-# can never be flipped public (the 1.0.0 open-source release ships to a fresh repo).
+# `git add -f` and for paths that slip the ignore patterns. The privacy scan
+# (.claude/skills/pr/scripts/scan.sh --staged) then checks every added line for
+# private IPs, emails, tailnet hosts, home paths and your .privacy-denylist.
 #
 # Bypass, if you genuinely mean it: git commit --no-verify
 
@@ -39,6 +40,11 @@ while IFS= read -r file; do
 		blocked=1
 	fi
 done <<<"$staged"
+
+# Privacy scan of the staged lines (prints where, never the matched value).
+if ! bash .claude/skills/pr/scripts/scan.sh --staged >&2; then
+	blocked=1
+fi
 
 # The Codex mirror is generated — warn (don't block) when it drifts.
 if grep -qE '^\.(claude/(skills|agents)|agents/skills|codex/agents)/' <<<"$staged" &&
