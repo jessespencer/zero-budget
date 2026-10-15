@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+#
+# Refuse to commit the database, env files, or anything else carrying real
+# financial data.
+#
+# .gitignore already covers most of these paths — this hook is the backstop for
+# `git add -f` and for paths that slip the ignore patterns. It matters because a
+# committed zero.db is unrecoverable in practice, and is exactly why this repo
+# can never be flipped public (the 1.0.0 open-source release ships to a fresh repo).
+#
+# Bypass, if you genuinely mean it: git commit --no-verify
+
+set -euo pipefail
+
+max_bytes=5242880 # 5 MiB
+blocked=0
+
+staged=$(git diff --cached --name-only --diff-filter=ACM)
+[ -n "$staged" ] || exit 0
+
+while IFS= read -r file; do
+	[ -n "$file" ] || continue
+
+	case "$file" in
+	.env.example) ;; # the one env file that belongs in the repo
+	data/* | *.db | *.db-wal | *.db-shm | *.sqlite | *.sqlite3 | \
+		.env | .env.* | *.backup | backups/* | */backups/* | \
+		YNAB* | "Historical Data"/* | scripts/historical/*)
+		echo "blocked: $file — financial data / secrets must not be committed." >&2
+		blocked=1
+		continue
+		;;
+	esac
+
+	# Generic shape of "a database got committed anyway".
+	size=$(git cat-file -s "$(git rev-parse ":$file")" 2>/dev/null || echo 0)
+	if [ "$size" -gt "$max_bytes" ]; then
+		echo "blocked: $file — staged blob is $((size / 1048576)) MiB (limit 5 MiB)." >&2
+		blocked=1
+	fi
+done <<<"$staged"
+
+# The Codex mirror is generated — warn (don't block) when it drifts.
+if grep -qE '^\.(claude/(skills|agents)|agents/skills|codex/agents)/' <<<"$staged" &&
+	! node scripts/sync-codex-mirror.mjs --check >/dev/null 2>&1; then
+	echo "warning: the Codex mirror is out of sync with .claude/ — run: npm run codex:sync" >&2
+fi
+
+if [ "$blocked" -ne 0 ]; then
+	echo "" >&2
+	echo "unstage with: git restore --staged <file>" >&2
+	echo "if you really mean it: git commit --no-verify" >&2
+	exit 1
+fi
+
+exit 0

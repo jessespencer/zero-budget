@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      # Added 2026-07-19. tsc had two pre-existing failures in test fixtures
+      # for months, so this step couldn't be switched on -- which meant type
+      # errors were never checked by anything automatic. Fixtures fixed, gate
+      # on.
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm run test:run

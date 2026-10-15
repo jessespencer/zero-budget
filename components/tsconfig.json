@@ -1,0 +1,7 @@
+{
+  "//": "Exists only so Vitest can render these components in tests. Vitest transforms .tsx with esbuild, which reads the NEAREST tsconfig and refuses to parse jsx:'preserve' (the root setting, which Next requires and rewrites on every build). Overriding to react-jsx here is scoped to this directory: Next resolves the root tsconfig only, and `tsc --noEmit` follows the root config's include list, so neither sees this file. Deleting it breaks every component test with 'invalid JS syntax'. Mirrors __tests__/tsconfig.json.",
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "jsx": "react-jsx"
+  }
+}

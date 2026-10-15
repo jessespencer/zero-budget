@@ -1,0 +1,36 @@
+-- Phase 8 introduced `tracked_assets` (migration 013) as the canonical home
+-- for manually-tracked, non-budget holdings: investments, retirement, real
+-- estate, crypto, vehicles, and miscellaneous "other" net-worth items. After
+-- that landed, the dashboard and net-worth holdings page merged tracked
+-- assets with same-named `accounts.type` values into combined groups
+-- (investments + investment-typed accounts, retirement + retirement-typed
+-- accounts, etc.). That left users with two visually-indistinguishable
+-- places to enter the same kind of holding — the "Add account" dialog and
+-- the "Add tracked asset" flow — which was the dual-entry confusion called
+-- out in 260515-j92.
+--
+-- This migration removes the overlap from the data layer by deleting any
+-- accounts.type ∈ ('investment','retirement','real_estate','vehicle') rows.
+-- The TypeScript `AccountType` union is narrowed in the same commit (see
+-- lib/types.ts), and every UI surface that branched on the dropped types is
+-- updated alongside. After this change, `accounts` exclusively models
+-- cash-flow and debt (checking / cash / savings / credit_card / other), and
+-- all non-budget holdings live in `tracked_assets`.
+--
+-- Cascade safety — every inbound FK to accounts(id) is either CASCADE or
+-- SET NULL, so DELETE FROM accounts is safe to run inside the default
+-- transactional wrap:
+--
+--   transactions.account_id              ON DELETE CASCADE   (001)
+--   statement_balances.account_id        ON DELETE CASCADE   (001)
+--   scheduled_transactions.account_id    ON DELETE CASCADE   (002)
+--   transfer_plan_actuals.account_id     ON DELETE CASCADE   (014)
+--   categories.allocation_account_id     ON DELETE SET NULL  (001)
+--
+-- `accounts.type` has no CHECK constraint, so no DDL is needed — narrowing
+-- the TypeScript union is sufficient to prevent new rows of the dropped
+-- types from being inserted by the application. The local development DB
+-- has zero rows of the dropped types; the Pi prod DB may have some legacy
+-- rows and this DELETE will clean them up.
+
+DELETE FROM accounts WHERE type IN ('investment','retirement','real_estate','vehicle');

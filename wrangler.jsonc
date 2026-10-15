@@ -1,0 +1,15 @@
+// The launch site (site/) on Cloudflare, as static assets — no build step.
+// Served at https://zero.jessedestroys.com (jessedestroys.com's DNS is on
+// Cloudflare; the custom domain below creates its record and certificate).
+// Deploy: `npx wrangler@4 deploy`, or connect the PUBLIC repo in the Cloudflare
+// dashboard (Workers Builds runs the same command). Never connect this private
+// repo: its history is why the open-source release ships to a fresh one.
+{
+  "$schema": "https://unpkg.com/wrangler/config-schema.json",
+  "name": "zero-budget",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./site"
+  },
+  "routes": [{ "pattern": "zero.jessedestroys.com", "custom_domain": true }]
+}

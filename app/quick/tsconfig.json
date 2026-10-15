@@ -1,0 +1,7 @@
+{
+  "//": "Exists only so Vitest can render /quick components in tests — same reason and same scope as components/tsconfig.json: esbuild reads the NEAREST tsconfig and refuses the root's jsx:'preserve'. Next and `tsc --noEmit` only read the root config.",
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "jsx": "react-jsx"
+  }
+}

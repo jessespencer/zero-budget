@@ -1,0 +1,7 @@
+{
+  "//": "Vitest transforms .tsx via esbuild, which reads the nearest tsconfig. The root config sets jsx:'preserve' (Next compiles JSX itself), and esbuild refuses to parse that — it errors with 'make sure to not set jsx to preserve'. Overriding to react-jsx here scopes the change to the test tree so the Next build is untouched. This is why component tests could not run before: not a missing dependency, just this.",
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "jsx": "react-jsx"
+  }
+}

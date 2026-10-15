@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FAQ — Zero</title>
+  <meta name="description" content="Answers about Zero: privacy, self-hosting, importing from your bank or YNAB, AI import, and how it works day to day." />
+  <meta name="theme-color" content="#060908" />
+  <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png" />
+  <link rel="icon" href="favicon-192.png" sizes="192x192" type="image/png" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <!-- Social preview. Absolute URLs — most platforms ignore relative ones. Change
+       them here and in og:url if the site ever moves. -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://zero.jessedestroys.com/faq" />
+  <meta property="og:title" content="Zero — Budget down to zero" />
+  <meta property="og:description" content="Personal budgeting that lives on your computer, not in someone&#39;s cloud. One file, no account, 100% free and open source." />
+  <meta property="og:image" content="https://zero.jessedestroys.com/og.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Zero: Budget down to zero, shown over the Zero budget screen" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Zero — Budget down to zero" />
+  <meta name="twitter:description" content="Personal budgeting that lives on your computer, not in someone&#39;s cloud. 100% free and open source." />
+  <meta name="twitter:image" content="https://zero.jessedestroys.com/og.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <script>
+    // Apply the theme before first paint: a saved override ("light"/"dark")
+    // wins; otherwise follow the system setting.
+    (function () {
+      var saved = null;
+      try { localStorage.removeItem("zero-site-theme-override"); localStorage.removeItem("zero-site-theme"); saved = sessionStorage.getItem("zero-site-theme"); } catch (e) {}
+      if (saved !== "light" && saved !== "dark") saved = null;
+      var light = saved ? saved === "light" : window.matchMedia("(prefers-color-scheme: light)").matches;
+      if (light) document.documentElement.dataset.theme = "light";
+    })();
+  </script>
+</head>
+<body>
+  <!-- Floating pill nav -->
+  <header class="nav-wrap">
+    <nav class="nav" aria-label="Main">
+      <a class="brand" href="index.html#top" aria-label="Zero home">
+        <span class="brand-mark">Z</span>
+        <span class="brand-name">Zero</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="index.html#product">Demo</a></li>
+        <li><a href="index.html#features">Features</a></li>
+        <li><a href="index.html#ai-import">AI import</a></li>
+        <li><a href="index.html#transfer-plan">Transfer plan</a></li>
+        <li><a href="index.html#install">Self-host</a></li>
+      </ul>
+      <div class="nav-actions">
+        <a class="nav-link-quiet" href="#" data-github>GitHub</a>
+        <a class="btn btn-primary btn-sm" href="index.html#install">Get Zero</a>
+        <button class="menu-toggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu" data-menu-toggle>
+          <span></span><span></span>
+        </button>
+      </div>
+    </nav>
+    <div class="mobile-menu" id="mobile-menu" data-menu hidden>
+      <a href="index.html#product">Demo</a>
+      <a href="index.html#features">Features</a>
+      <a href="index.html#ai-import">AI import</a>
+      <a href="index.html#transfer-plan">Transfer plan</a>
+      <a href="index.html#install">Self-host</a>
+      <a href="#" data-github>GitHub</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="page-hero reveal">
+      <a class="eyebrow" href="index.html"><span class="eyebrow-dot"></span>Zero · FAQ</a>
+      <h1>Questions, answered.</h1>
+      <p>Privacy, self-hosting, getting your transactions in, and what it's like to use day to day.</p>
+    </section>
+
+    <div class="faq">
+      <section class="faq-group reveal">
+        <h2>The basics</h2>
+        <details>
+          <summary>What is Zero?</summary>
+          <div class="faq-a">
+            <p>Envelope budgeting you host yourself. You give every dollar of income a category until Ready to assign hits $0. Then the transfer plan tells you what to move between accounts.</p>
+            <p>Everything lives in one SQLite file on your own machine. There's no account to create and no subscription.</p>
+          </div>
+        </details>
+        <details>
+          <summary>What does it cost?</summary>
+          <div class="faq-a">
+            <p>Nothing. Zero is free and open source under the AGPL-3.0 license. You run it on your own computer or a small home server.</p>
+            <p>The only optional cost is an AI agent subscription if you want to use AI import.</p>
+          </div>
+        </details>
+        <details>
+          <summary>Why is it called Zero?</summary>
+          <div class="faq-a">
+            <p>Because that's where a budget lands when every dollar has somewhere to go: Ready to assign reads $0. When it does, the header says so.</p>
+          </div>
+        </details>
+        <details>
+          <summary>Do I need to know how to code?</summary>
+          <div class="faq-a">
+            <p>Not to use it. Installing takes a few terminal commands, and the <a href="#" data-repo-file="docs/INSTALL.md">install guide</a> walks through each one. After that it's an app in your browser.</p>
+          </div>
+        </details>
+      </section>
+      <section class="faq-group reveal">
+        <h2>Your data and privacy</h2>
+        <details>
+          <summary>Where does my data live?</summary>
+          <div class="faq-a">
+            <p>In a single SQLite file on the machine running Zero. Nothing is sent anywhere: there are no accounts, no analytics and no telemetry.</p>
+          </div>
+        </details>
+        <details>
+          <summary>Is there a login?</summary>
+          <div class="faq-a">
+            <p>No, on purpose. Anyone who can reach Zero can use it, so keep it on your own computer or a private network like Tailscale. Don't put it on the open internet without authentication in front. <a href="#" data-repo-file="SECURITY.md">Read the security notes</a>.</p>
+          </div>
+        </details>
+        <details>
+          <summary>How do I back it up?</summary>
+          <div class="faq-a">
+            <p>Run <code>npm run backup</code>, or copy the database file. That file is the whole budget. Zero also backs it up before every update.</p>
+          </div>
+        </details>
+        <details>
+          <summary>What if I stop using Zero?</summary>
+          <div class="faq-a">
+            <p>Your data is never locked in. Export your transactions as CSV at any time, and the database is a standard SQLite file that any SQLite tool can open.</p>
+          </div>
+        </details>
+      </section>
+      <section class="faq-group reveal">
+        <h2>Getting money in</h2>
+        <details>
+          <summary>Does Zero connect to my bank?</summary>
+          <div class="faq-a">
+            <p>No. There's no bank sync, so your bank credentials never leave the bank. Add transactions by hand (including from your phone), import a CSV, or have your AI agent reconcile a statement.</p>
+          </div>
+        </details>
+        <details>
+          <summary>How does AI import work?</summary>
+          <div class="faq-a">
+            <p>It runs in your AI agent, not in Zero. Zero ships an <code>import-txns</code> skill for agents like Claude Code or Codex. Share a statement (a screenshot, CSV or pasted text) and the agent matches each line, backs up, and inserts only what's missing.</p>
+            <p>Your statement goes to your AI provider, like anything else you send it. Zero never sends it anywhere.</p>
+          </div>
+        </details>
+        <details>
+          <summary>Will importing create duplicates?</summary>
+          <div class="faq-a">
+            <p>No. CSV import skips rows already in Zero or repeated in the file. AI import matches every line first, including pending charges that post for a different amount.</p>
+          </div>
+        </details>
+        <details>
+          <summary>Can I bring my history from YNAB?</summary>
+          <div class="faq-a">
+            <p>Yes. Zero recognizes a YNAB register export, along with nine bank formats, and multi-account exports are mapped to your Zero accounts by name. Anything else can be mapped column by column with a live preview. <a href="switch.html">More on switching to Zero</a>.</p>
+          </div>
+        </details>
+      </section>
+      <section class="faq-group reveal">
+        <h2>Using Zero</h2>
+        <details>
+          <summary>Can I use it on my phone?</summary>
+          <div class="faq-a">
+            <p>Yes. Quick add is a thumb-sized screen for logging a purchase at the register, and it installs on your phone like an app. The full budget is best on a larger screen. To reach Zero away from your desk, see the <a href="#" data-repo-file="docs/REMOTE-ACCESS.md">remote access guide</a>.</p>
+          </div>
+        </details>
+        <details>
+          <summary>Can my partner and I share it?</summary>
+          <div class="faq-a">
+            <p>Yes. Zero is one budget for the household, and everyone opens it from their own device.</p>
+          </div>
+        </details>
+        <details>
+          <summary>What is the transfer plan?</summary>
+          <div class="faq-a">
+            <p>Zero reads your budget against your real account balances and hands you a checklist: send this much to savings, pay this much to the card, leave the rest in checking. It's recalculated every time, so it never drifts.</p>
+          </div>
+        </details>
+        <details>
+          <summary>Which currencies does it support?</summary>
+          <div class="faq-a">
+            <p>US dollars, for now.</p>
+          </div>
+        </details>
+      </section>
+    </div>
+
+    <section class="cta reveal">
+      <div class="cta-glow" aria-hidden="true"></div>
+      <h2>Still curious?</h2>
+      <p>The fastest answer is to run it. It's free, and your data stays on your machine.</p>
+      <div class="hero-ctas">
+        <a class="btn btn-primary" href="index.html#install">Get Zero</a>
+        <a class="btn btn-ghost" href="#" data-github>View on GitHub</a>
+      </div>
+    </section>
+  </main>
+
+  <!-- Giant footer -->
+  <footer class="footer">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <a class="brand" href="index.html#top"><span class="brand-mark">Z</span><span class="brand-name">Zero</span></a>
+        <p>Personal family finance.<br />Built by <a href="https://jessedestroys.com" target="_blank" rel="noopener">jessedestroys.com</a></p>
+      </div>
+      <div class="footer-cols">
+        <div>
+          <h4>Product</h4>
+          <a href="index.html#product">Demo</a>
+          <a href="index.html#features">Features</a>
+          <a href="index.html#ai-import">AI import</a>
+          <a href="index.html#transfer-plan">Transfer plan</a>
+          <a href="index.html#install">Self-host</a>
+          <a href="switch.html">Switching to Zero</a>
+          <a href="faq.html">FAQ</a>
+        </div>
+        <div>
+          <h4>Project</h4>
+          <a href="#" data-github>GitHub</a>
+          <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">License (AGPL-3.0)</a>
+          <a href="#" data-repo-file="SECURITY.md">Security</a>
+          <a href="#" data-repo-file="CONTRIBUTING.md">Contributing</a>
+        </div>
+      </div>
+    </div>
+    <div class="wordmark" aria-hidden="true">zero</div>
+  </footer>
+
+  <!-- Theme: System (default) follows the OS; Light/Dark override it for this tab -->
+  <div class="theme-switch" role="radiogroup" aria-label="Theme" data-theme-switch>
+    <button type="button" role="radio" data-theme-choice="system" aria-label="Match system" title="Match system"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></button>
+    <button type="button" role="radio" data-theme-choice="light" aria-label="Light" title="Light"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
+    <button type="button" role="radio" data-theme-choice="dark" aria-label="Dark" title="Dark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg></button>
+  </div>
+
+  <script src="script.js" defer></script>
+</body>
+</html>

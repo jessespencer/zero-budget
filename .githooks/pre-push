@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+#
+# Reject force-pushes and deletions of main.
+#
+# GitHub-side branch protection isn't available here (private repo on a Free
+# account), so this hook is the stand-in. It is a speed bump, not a lock:
+# `git push --no-verify` bypasses it, and it only exists in clones where
+# `core.hooksPath` points at .githooks (see `npm run hooks:install`).
+#
+# Only main is guarded. Feature and PR branches force-push freely.
+
+set -euo pipefail
+
+protected_ref="refs/heads/main"
+zero_sha="0000000000000000000000000000000000000000"
+
+# git feeds one line per ref being pushed:
+#   <local-ref> <local-sha> <remote-ref> <remote-sha>
+while read -r local_ref local_sha remote_ref remote_sha; do
+	[ "$remote_ref" = "$protected_ref" ] || continue
+
+	if [ "$local_sha" = "$zero_sha" ]; then
+		echo "blocked: refusing to delete $protected_ref on the remote." >&2
+		echo "         if you really mean it: git push --no-verify ..." >&2
+		exit 1
+	fi
+
+	# A brand-new remote branch has nothing to lose.
+	[ "$remote_sha" = "$zero_sha" ] && continue
+
+	# Non-fast-forward: the remote tip isn't reachable from what we're pushing,
+	# so this push would drop commits that only exist on the remote.
+	if ! git merge-base --is-ancestor "$remote_sha" "$local_sha"; then
+		lost=$(git rev-list --count "$local_sha..$remote_sha" 2>/dev/null || echo "?")
+		echo "blocked: non-fast-forward push to $protected_ref would discard $lost remote commit(s)." >&2
+		echo "         local:  $local_sha" >&2
+		echo "         remote: $remote_sha" >&2
+		echo "         rebase onto the remote instead, or if you really mean it:" >&2
+		echo "           git push --no-verify ..." >&2
+		exit 1
+	fi
+done
+
+exit 0

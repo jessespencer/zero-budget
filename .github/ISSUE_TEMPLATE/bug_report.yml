@@ -1,0 +1,45 @@
+name: Bug report
+description: Something in Zero isn't working the way it should
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting this. **Don't paste real account names, balances, or transactions** — describe them, or reproduce the bug with `npm run seed:dev` data.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did you see, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Go to Budget
+        2. Assign $50 to Groceries
+        3. ...
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How do you run Zero?
+      options:
+        - Docker
+        - Native (npm start / pm2)
+        - Development (npm run dev)
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Shown at the bottom of the sidebar, or the commit you're on.
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Browser, screenshots (with amounts hidden — privacy mode helps), or server log output.

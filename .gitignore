@@ -1,0 +1,75 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+/test-results/
+/playwright-report/
+
+# next.js
+/.next/
+/.next-prod/
+/.next-a11y/
+/.next-probe-turbo/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+!.env.example
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+
+# local data
+/data/
+YNAB*/
+YNAB Export*/
+/Historical Data/
+/.planning/historical/
+
+# personal historical-data tooling (SEED-018 — personal, not for OSS)
+/scripts/historical/
+/scripts/import-tracked-asset-history.mjs
+
+# claude code — unignore project-level config so agents/skills travel with the
+# repo, but keep local-only settings out (override global ~/.gitignore_global).
+!.claude/
+.claude/settings.local.json
+.claude/worktrees/
+.claude/scheduled_tasks.lock
+
+# cron output from the Pi's 6-hourly backup (crontab writes it into the checkout)
+backup.log
+
+# per-machine agent notes (personal hosts, IPs)
+CLAUDE.local.md
+
+# Personal values the /pr privacy scan blocks (never commit)
+.privacy-denylist

@@ -1,0 +1,8 @@
+services:
+  zero:
+    build: .
+    ports:
+      - "${ZERO_PORT:-4040}:3000"   # http://localhost:4040, like a native install; ZERO_PORT=… to change
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped

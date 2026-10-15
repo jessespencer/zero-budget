@@ -1,0 +1,698 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@source not "../.claude";
+@source not "../.planning";
+@source not "../data";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Let <th> inherit font-weight from parent row instead of browser-default bold */
+th {
+  font-weight: inherit;
+}
+
+/* Canonical page-title typography. Used on the h1 in every page header
+   (Budget, Insights, Schedules, Transactions, Transfer plan, …) and on the
+   visible month/year labels in MonthSelector/YearSelector — those render a
+   <div> instead of an <h1> so the budget page can ship a single canonical h1.
+   Keep the two paths in sync by using this class, not the inline equivalents. */
+@utility page-title {
+  font-size: 2rem; /* 32px */
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+/* Canonical section-heading typography. One size for every in-content section
+   heading (Holdings, All-time spending, Seasonal patterns, Daily spend) so they
+   read as one consistent level under the 32px page-title. */
+@utility heading-section {
+  font-size: 1.125rem; /* 18px */
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+/* One-line descriptive subtitle sitting under a heading-section. */
+@utility text-subtitle {
+  font-size: 0.875rem; /* 14px */
+  line-height: 1.25rem;
+  color: var(--muted-foreground);
+}
+
+/* Restore pointer cursor on interactive elements (Tailwind v4 Preflight removes it) */
+button,
+[role="button"],
+select,
+summary,
+[type="button"],
+[type="reset"],
+[type="submit"] {
+  cursor: pointer;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: "Figtree Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono);
+  --font-heading: "Figtree Variable", ui-sans-serif, system-ui, sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-foreground-muted: var(--sidebar-foreground-muted);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  /* Opaque flatten of bg-accent/40 over bg-card. Sticky cells must use this
+     instead of the alpha token — content scrolling beneath shows through 40%
+     alpha. srgb mix to match how the compositor blends the alpha version. */
+  --color-accent-solid: color-mix(in srgb, var(--accent) 40%, var(--card));
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Budget state colors — resolved per theme */
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
+  --color-negative-strong: var(--negative-strong);  /* large display numbers, debt total */
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+  --color-sidebar-foreground-negative: var(--sidebar-foreground-negative);
+
+  /* Badge intent palette — surface / text / icon triplet per intent.
+     Tonal chips (neutral, positive, negative, warning) sit quiet on the
+     pale page bg. Brand and info are the only "loud" treatments,
+     reserved for sparing use. NOTE: neutral and info are semantically
+     close (both convey "informational, no value judgement"). If we drop
+     one later, info can alias to neutral. */
+  --color-badge-neutral-surface:  var(--badge-neutral-surface);
+  --color-badge-neutral-text:     var(--badge-neutral-text);
+  --color-badge-positive-surface: var(--badge-positive-surface);
+  --color-badge-positive-text:    var(--badge-positive-text);
+  --color-badge-positive-icon:    var(--badge-positive-icon);
+  --color-badge-negative-surface: var(--badge-negative-surface);
+  --color-badge-negative-text:    var(--badge-negative-text);
+  --color-badge-negative-icon:    var(--badge-negative-icon);
+  --color-badge-warning-surface:  var(--badge-warning-surface);
+  --color-badge-warning-text:     var(--badge-warning-text);
+  --color-badge-warning-icon:     var(--badge-warning-icon);
+  --color-badge-info-surface:     var(--badge-info-surface);
+  --color-badge-info-text:        var(--badge-info-text);
+  --color-badge-info-icon:        var(--badge-info-icon);
+  --color-badge-brand-surface:    var(--badge-brand-surface);
+  --color-badge-brand-text:       var(--badge-brand-text);
+
+  /* ============================================================
+     Role tokens — change once, propagate everywhere.
+     Each is a single design decision expressed as a single value.
+     ============================================================ */
+  /* Pill radius. rounded-full today; flip to a smaller value to
+     soften all pill-shaped UI (buttons, badges, filter chips,
+     available pill, sidebar items) in one place. */
+  --radius-pill: 9999px;
+
+  /* Weight for action-class type — buttons, pills, badges, primary
+     filter pills. Bumping this to 800 turns the UI louder; dropping
+     to 600 turns it calmer. Single knob. */
+  --font-weight-action: 600;
+
+  /* Default chunky pill height. Default Button (h-10) and inactive
+     filter pill (py-2 + text-sm) both resolve to this — keep them
+     aligned by reading from the token rather than re-deriving. */
+  --height-pill: 2.5rem;
+
+  /* Layout spacing tokens */
+  --spacing-toolbar: 2.75rem; /* 44px — filter bars & toolbars */
+
+  /* Type-scale override. Tailwind v4 ships text-base at 1rem (16px); we use
+     15px as the body baseline so inputs, comboboxes, dropdowns, dialog body,
+     popovers, etc. match the table rows (which set text-[15px] directly).
+     Line-height ratio preserved at 1.5 → 15px × 1.6 = 24px effective leading,
+     same vertical rhythm as the old 16/24 default. */
+  --text-base: 0.9375rem;
+  --text-base--line-height: calc(1.5 / 0.9375);
+}
+
+/* ============================================================
+   Light theme (default) — Acid Ink v2 (experimental)
+   ============================================================ */
+:root {
+  /* Surface ladder — three rungs, one job each.
+     L0 background  → page + side rail (the canvas)
+     L1 card        → LIFTS from canvas (border + shadow)
+     L2 secondary   → INSETS / wells / secondary button (slightly recessed from canvas)
+     Neutrals sit on a faint cool green (hue 150, matching the sidebar and
+     brand); they were cream (hue 100) until 2026-10-14 — see SEED-028. */
+  --background: oklch(0.962 0.008 150);
+  --foreground: oklch(0.16 0.012 140);
+
+  --card: oklch(0.992 0.003 150);
+  --card-foreground: oklch(0.16 0.012 140);
+
+  --popover: oklch(0.992 0.003 150);
+  --popover-foreground: oklch(0.16 0.012 140);
+
+  /* Acid lime — high lightness. Use as background with dark foreground.
+     text-primary on /10 tints will be hard to read; revisit affected pills
+     (Ready-to-assign, theme-toggle active) if we keep this palette. */
+  --primary: oklch(0.86 0.21 128);
+  --primary-foreground: oklch(0.15 0.03 140);
+
+  --secondary: oklch(0.945 0.006 150);
+  --secondary-foreground: oklch(0.22 0.018 140);
+
+  --muted: oklch(0.945 0.006 150);
+  --muted-foreground: oklch(0.46 0.012 130);
+
+  --accent: oklch(0.945 0.006 150);
+  --accent-foreground: oklch(0.22 0.018 140);
+
+  --destructive: oklch(0.51 0.23 24);
+
+  --border: oklch(0.90 0.008 150);
+  --input: oklch(0.90 0.008 150);
+  /* Deeper than --primary: lime at 40% vanished into the pale page, so the
+     ring used to need 3px plus a lime border swap to show. A darker brand
+     green reads at 2px without glaring. */
+  --ring: oklch(0.62 0.15 150);
+
+  /* Chart palette */
+  --chart-1: oklch(0.74 0.20 128);
+  --chart-2: oklch(0.55 0.18 265);
+  --chart-3: oklch(0.60 0.21 25);
+  --chart-4: oklch(0.72 0.16 72);
+  --chart-5: oklch(0.60 0.13 200);
+
+  /* Spending breakdown palette — categorical, color = category identity
+     (hashed by name in the chart code), so "Groceries" stays the same
+     hue every month. Ten hues spaced around the OKLCH wheel at uniform
+     L≈0.62 / C≈0.16, anchored on the brand lime + the warm earth family
+     (gold, burnt orange, brick) and extended into adjacent jewel tones
+     (pink, magenta, violet, blue, teal, forest). Uniform L+C is what
+     makes the wheel read as ONE family instead of a default rainbow:
+     no slice screams louder than another, and slice size carries the
+     actual signal (spend amount). */
+  --chart-spend-1:  oklch(0.70 0.19 128);  /* brand lime */
+  --chart-spend-2:  oklch(0.62 0.16 90);   /* warm gold */
+  --chart-spend-3:  oklch(0.60 0.16 50);   /* burnt orange */
+  --chart-spend-4:  oklch(0.58 0.18 25);   /* warm brick */
+  --chart-spend-5:  oklch(0.60 0.17 350);  /* warm pink */
+  --chart-spend-6:  oklch(0.55 0.17 310);  /* magenta */
+  --chart-spend-7:  oklch(0.55 0.16 270);  /* violet */
+  --chart-spend-8:  oklch(0.60 0.14 230);  /* blue */
+  --chart-spend-9:  oklch(0.62 0.12 200);  /* teal */
+  --chart-spend-10: oklch(0.58 0.13 165);  /* forest green */
+
+  --radius: 0.5rem;
+
+  /* Sidebar — near-black green */
+  --sidebar: oklch(0.165 0.018 150);
+  --sidebar-foreground: oklch(0.97 0.018 130);
+  --sidebar-foreground-muted: oklch(0.70 0.018 130);
+  --sidebar-foreground-negative: oklch(0.74 0.20 24);
+  --sidebar-primary: oklch(0.88 0.22 128);
+  --sidebar-primary-foreground: oklch(0.15 0.03 140);
+  --sidebar-accent: oklch(0.24 0.03 150);
+  --sidebar-accent-foreground: oklch(0.97 0.018 130);
+  --sidebar-border: oklch(0.24 0.03 150);
+  --sidebar-ring: oklch(0.88 0.22 128);
+
+  /* Budget state colors — warm paper / lime / ink family. Aligned with
+     the badge palette below so balance numbers, sidebar indicators, and
+     badges all read as one system.
+     --negative-strong is a larger-display variant for hero numbers like
+     the CREDIT CARD DEBT total; --negative is the workaday token used
+     for inline text, icons, and small accents. */
+  --positive:        #44660F;  /* muted olive-lime — NOT brand lime */
+  --negative:        #97371B;  /* warm brick (badge text, accents) */
+  --negative-strong: #BE4422;  /* warm brick, brighter (large display, debt total) */
+  --warning:         #855512;  /* warm saffron */
+  --info:            oklch(0.48 0.22 258);  /* kept separate — badge "info" is a dark ink chip, not a hue */
+
+  /* Badge intent palette — warm paper / lime / ink brand.
+     Tonal chips: subtle surface + same-family darker text & icon.
+     Brand and info are the only solid treatments; use sparingly. */
+  --badge-neutral-surface:  #E6E3D9;
+  --badge-neutral-text:     #5A574C;
+
+  --badge-positive-surface: #DEECB7;  /* muted olive-lime surface */
+  --badge-positive-text:    #44660F;
+  --badge-positive-icon:    #44660F;
+
+  --badge-negative-surface: #F1D9CD;  /* warm brick, not cool rose */
+  --badge-negative-text:    #97371B;
+  --badge-negative-icon:    #97371B;
+
+  --badge-warning-surface:  #F5E4BC;
+  --badge-warning-text:     #855512;
+  --badge-warning-icon:     #855512;
+
+  --badge-info-surface:     #21211B;  /* dark ink chip — replaces old blue entirely */
+  --badge-info-text:        #EBE8DD;
+  --badge-info-icon:        #A6DA0F;
+
+  --badge-brand-surface:    #A6DA0F;  /* bold lime — reserved */
+  --badge-brand-text:       #21211B;
+
+  /* @deprecated — single-color badge tokens from the OKLCH palette.
+     Old recipe used these as both text color and the source for a
+     15%-mixed bg. New recipe uses explicit surface/text/icon tokens.
+     Aliasing each to its corresponding -text token preserves the
+     "darker family member" semantic these legacy tokens carried. */
+  --badge-neutral:  var(--badge-neutral-text);
+  --badge-positive: var(--badge-positive-text);
+  --badge-negative: var(--badge-negative-text);
+  --badge-warning:  var(--badge-warning-text);
+  --badge-info:     var(--badge-info-text);
+}
+
+/* ============================================================
+   Dark theme — Acid Ink v2 (experimental)
+   ============================================================ */
+.dark {
+  /* Surface ladder — card LIFTS up from the ink bg; secondary SINKS
+     toward bg. This inversion vs light theme is intentional: in dark
+     mode, "elevation" = "more light"; in light mode, "elevation" =
+     "more white plus shadow". */
+  --background: oklch(0.145 0.006 150);
+  --foreground: oklch(0.96 0.010 130);
+
+  --card: oklch(0.205 0.008 150);
+  --card-foreground: oklch(0.96 0.010 130);
+
+  --popover: oklch(0.205 0.008 150);
+  --popover-foreground: oklch(0.96 0.010 130);
+
+  --primary: oklch(0.88 0.22 128);
+  --primary-foreground: oklch(0.15 0.04 140);
+
+  --secondary: oklch(0.165 0.008 150);
+  --secondary-foreground: oklch(0.96 0.014 130);
+
+  --muted: oklch(0.225 0.012 150);
+  --muted-foreground: oklch(0.64 0.010 135);
+
+  --accent: oklch(0.225 0.012 150);
+  --accent-foreground: oklch(0.96 0.014 130);
+
+  --destructive: oklch(0.74 0.22 22);
+
+  --border: oklch(0.275 0.010 150);
+  --input: oklch(0.275 0.010 150);
+  --ring: oklch(0.88 0.22 128);
+
+  /* Chart palette */
+  --chart-1: oklch(0.85 0.22 128);
+  --chart-2: oklch(0.66 0.18 265);
+  --chart-3: oklch(0.68 0.21 25);
+  --chart-4: oklch(0.82 0.16 78);
+  --chart-5: oklch(0.72 0.14 200);
+
+  /* Spending breakdown palette — dark-mode tuning. Same hue wheel as
+     light mode, lifted in lightness (~0.74) and slightly desaturated so
+     it pops off the ink bg without buzzing. */
+  --chart-spend-1:  oklch(0.80 0.20 128);  /* pale brand lime */
+  --chart-spend-2:  oklch(0.78 0.16 90);   /* pale gold */
+  --chart-spend-3:  oklch(0.75 0.16 50);   /* pale burnt orange */
+  --chart-spend-4:  oklch(0.72 0.18 25);   /* pale brick */
+  --chart-spend-5:  oklch(0.75 0.17 350);  /* pale pink */
+  --chart-spend-6:  oklch(0.70 0.17 310);  /* pale magenta */
+  --chart-spend-7:  oklch(0.68 0.16 270);  /* pale violet */
+  --chart-spend-8:  oklch(0.72 0.14 230);  /* pale blue */
+  --chart-spend-9:  oklch(0.75 0.12 200);  /* pale teal */
+  --chart-spend-10: oklch(0.72 0.13 165);  /* pale forest green */
+
+  /* Sidebar — even darker than main */
+  --sidebar: oklch(0.105 0.005 150);
+  --sidebar-foreground: oklch(0.96 0.010 130);
+  --sidebar-foreground-muted: oklch(0.64 0.010 130);
+  --sidebar-foreground-negative: oklch(0.78 0.22 22);
+  --sidebar-primary: oklch(0.88 0.22 128);
+  --sidebar-primary-foreground: oklch(0.15 0.04 140);
+  --sidebar-accent: oklch(0.205 0.014 150);
+  --sidebar-accent-foreground: oklch(0.96 0.010 130);
+  --sidebar-border: oklch(0.205 0.014 150);
+  --sidebar-ring: oklch(0.88 0.22 128);
+
+  /* Budget state colors — warm paper / lime / ink family, dark-mode tuning. */
+  --positive:        #BBD86A;  /* pale lime highlight */
+  --negative:        #E8927C;  /* warm brick highlight (badge text, accents) */
+  --negative-strong: #F4A38E;  /* brighter brick (large display, debt total) */
+  --warning:         #E0B86A;
+  --info:            oklch(0.78 0.21 258);
+
+  /* Badge intent palette — warm paper / lime / ink, dark canvas.
+     Deep tonal surfaces with light same-family text & icon. */
+  --badge-neutral-surface:  #2A2A23;
+  --badge-neutral-text:     #B5B1A2;
+
+  --badge-positive-surface: #2E3A18;
+  --badge-positive-text:    #BBD86A;
+  --badge-positive-icon:    #BBD86A;
+
+  --badge-negative-surface: #3E1F15;
+  --badge-negative-text:    #E8927C;
+  --badge-negative-icon:    #E8927C;
+
+  --badge-warning-surface:  #3B2D10;
+  --badge-warning-text:     #E0B86A;
+  --badge-warning-icon:     #E0B86A;
+
+  /* Info surface lifted from #1A1A14 → #2A2A23 so the chip stays
+     distinguishable from the dark page bg. Lime icon is the signal. */
+  --badge-info-surface:     #2A2A23;
+  --badge-info-text:        #EBE8DD;
+  --badge-info-icon:        #A6DA0F;
+
+  --badge-brand-surface:    #A6DA0F;
+  --badge-brand-text:       #21211B;
+
+  /* @deprecated — see light-theme block for context. */
+  --badge-neutral:  var(--badge-neutral-text);
+  --badge-positive: var(--badge-positive-text);
+  --badge-negative: var(--badge-negative-text);
+  --badge-warning:  var(--badge-warning-text);
+  --badge-info:     var(--badge-info-text);
+}
+
+/* Invert input colors inside dialogs */
+[data-slot="dialog-content"] {
+  --input: oklch(0.88 0.008 155);
+}
+.dark [data-slot="dialog-content"] {
+  --input: oklch(0.26 0.02 155);
+}
+
+/* ============================================================
+   Surface roles + badge recipe live in @layer components so
+   per-instance Tailwind utilities (text-[14px], px-3, etc.) can
+   override the defaults. Without this layer they'd sit AFTER
+   Tailwind's utilities layer and win every override war.
+   ============================================================ */
+@layer components {
+  /* ----- Surface roles — three shells every interactive pill picks
+     from. Change the recipe here and the whole app shifts in
+     lockstep. ----- */
+  .surface-brand {
+    /* The loud one. Solid lime fill, dark foreground. Active filter
+       selection, default Button. Rare by design — keep the contrast. */
+    background: var(--primary);
+    color: var(--primary-foreground);
+    border: 1px solid transparent;
+  }
+  .surface-card {
+    /* The quiet one. White card with a visible-but-subtle border —
+       matches the Input field so outline / secondary Buttons read as
+       interactive against the page bg. outline / secondary Button,
+       inactive filter pill, assign-input cell. */
+    background: var(--card);
+    color: color-mix(in oklab, var(--foreground) 80%, transparent);
+    border: 1px solid var(--border);
+  }
+  .surface-card:hover {
+    /* Soft: a faint fill, border barely moves. A 30% foreground border
+       read as a hard outline on every hover. */
+    color: var(--foreground);
+    background: color-mix(in oklab, var(--card) 96%, var(--foreground) 4%);
+    border-color: color-mix(in oklab, var(--border) 88%, var(--foreground) 12%);
+  }
+
+  /* ----- Badges — one recipe, six intents. Each intent supplies
+     explicit surface / text / icon tokens (no derivation). Tonal chips
+     (neutral, positive, negative, warning) stay quiet at density —
+     subtle surface + same-family darker text and icon. Info and brand
+     are the two "loud" treatments and should be used sparingly.
+     Default size is the small-chip case (font 0.72rem); larger consumers
+     like the available-pill override via text-[14px] + larger padding. ----- */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    border-radius: var(--radius-pill);
+    padding: 0.18rem 0.6rem;
+    font-size: 0.72rem;
+    font-weight: var(--font-weight-action);
+    line-height: 1.2;
+    white-space: nowrap;
+    background: var(--b-surface);
+    color: var(--b-text);
+    border: 1px solid transparent;
+  }
+  /* Icon (lucide svg) follows --b-icon when an intent ships one;
+     otherwise it inherits the text color via currentColor. */
+  .badge > svg { color: var(--b-icon, currentColor); }
+
+  .badge-neutral  {
+    --b-surface: var(--badge-neutral-surface);
+    --b-text:    var(--badge-neutral-text);
+  }
+  .badge-positive {
+    --b-surface: var(--badge-positive-surface);
+    --b-text:    var(--badge-positive-text);
+    --b-icon:    var(--badge-positive-icon);
+  }
+  .badge-negative {
+    --b-surface: var(--badge-negative-surface);
+    --b-text:    var(--badge-negative-text);
+    --b-icon:    var(--badge-negative-icon);
+  }
+  .badge-warning  {
+    --b-surface: var(--badge-warning-surface);
+    --b-text:    var(--badge-warning-text);
+    --b-icon:    var(--badge-warning-icon);
+  }
+  .badge-info     {
+    --b-surface: var(--badge-info-surface);
+    --b-text:    var(--badge-info-text);
+    --b-icon:    var(--badge-info-icon);
+  }
+
+  /* Brand emphasis — bold lime, dark ink text. Use sparingly. */
+  .badge-brand {
+    --b-surface: var(--badge-brand-surface);
+    --b-text:    var(--badge-brand-text);
+  }
+  /* @deprecated — old class name, kept for one cycle. Prefer .badge-brand. */
+  .badge-solid {
+    --b-surface: var(--badge-brand-surface);
+    --b-text:    var(--badge-brand-text);
+  }
+
+  /* ----- Summary card — the elevated panel used on the budget month
+     side-rail (Summary, Cost to Be Me, Auto-Assign). Cards earn
+     elevation from border + shadow, NOT a green tint. The lime ring
+     is reserved for the active/expanded card — the one place lime
+     ever touches a card surface. ----- */
+  .summary-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    box-shadow:
+      0 1px 2px rgb(20 30 20 / 0.04),
+      0 10px 26px -16px rgb(20 30 20 / 0.18);
+  }
+  .dark .summary-card {
+    box-shadow: none;
+  }
+  .summary-card[data-active="true"] {
+    /* Border + shadow are both lime so they merge into one continuous
+       2px ring with no gap at the rounded corners. (border-color alone
+       isn't enough — leaves a 1px ring; box-shadow alone leaves a gap
+       at the curve between the transparent border slot and the shadow.) */
+    border-color: var(--primary);
+    box-shadow: 0 0 0 1px var(--primary);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  html {
+    @apply font-sans;
+    color-scheme: light;
+  }
+  .dark {
+    color-scheme: dark;
+  }
+
+  /* Scrollbar — hidden until scrolling */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
+  *:hover {
+    scrollbar-color: var(--border) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 3px;
+    transition: background 0.2s;
+  }
+  *:hover::-webkit-scrollbar-thumb {
+    background: var(--border);
+  }
+  *:hover::-webkit-scrollbar-thumb:hover {
+    background: var(--muted-foreground);
+  }
+}
+
+/* Autofill override — light mode */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+input[data-com-onepassword-filled],
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+textarea:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 9999px oklch(0.96 0.005 160) inset !important;
+  -webkit-text-fill-color: oklch(0.15 0.01 160) !important;
+  caret-color: oklch(0.15 0.01 160) !important;
+  border-color: oklch(0.88 0.01 160) !important;
+  background-color: oklch(0.96 0.005 160) !important;
+  transition: background-color 5000s ease-in-out 0s !important;
+}
+
+/* Autofill override — dark mode */
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus,
+.dark input:-webkit-autofill:active,
+.dark input[data-com-onepassword-filled],
+.dark textarea:-webkit-autofill,
+.dark textarea:-webkit-autofill:hover,
+.dark textarea:-webkit-autofill:focus,
+.dark textarea:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 9999px oklch(0.22 0.01 160) inset !important;
+  -webkit-text-fill-color: oklch(0.93 0.005 160) !important;
+  caret-color: oklch(0.93 0.005 160) !important;
+  border-color: oklch(0.18 0.008 160) !important;
+  background-color: oklch(0.22 0.01 160) !important;
+  transition: background-color 5000s ease-in-out 0s !important;
+}
+
+/* Money that just changed (useFlashOnChange). A brief brand-green halo so a
+   mutation's effect is visible even when the number is off to the side. Two
+   names so an alternating data-flash value restarts the animation. Radius is
+   in :where() so a pill's own rounded-* class still wins. */
+:where([data-flash]) {
+  border-radius: 0.375rem;
+}
+[data-flash="a"] {
+  animation: amount-flash-a 700ms ease-out;
+}
+[data-flash="b"] {
+  animation: amount-flash-b 700ms ease-out;
+}
+@keyframes amount-flash-a {
+  0%, 25% {
+    background-color: color-mix(in oklch, var(--primary) 22%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--primary) 22%, transparent);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: 0 0 0 3px transparent;
+  }
+}
+@keyframes amount-flash-b {
+  0%, 25% {
+    background-color: color-mix(in oklch, var(--primary) 22%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--primary) 22%, transparent);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: 0 0 0 3px transparent;
+  }
+}
+
+/* Ring-only variant for surfaces with their own fill (pills, badges): a
+   background flash would wash the fill out mid-animation. */
+[data-flash-ring][data-flash="a"] {
+  animation-name: amount-ring-a;
+}
+[data-flash-ring][data-flash="b"] {
+  animation-name: amount-ring-b;
+}
+@keyframes amount-ring-a {
+  0%, 25% { box-shadow: 0 0 0 4px color-mix(in oklch, var(--primary) 35%, transparent); }
+  100% { box-shadow: 0 0 0 4px transparent; }
+}
+@keyframes amount-ring-b {
+  0%, 25% { box-shadow: 0 0 0 4px color-mix(in oklch, var(--primary) 35%, transparent); }
+  100% { box-shadow: 0 0 0 4px transparent; }
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Privacy / demo mode anti-flash. On a hard reload the server renders the real
+   numbers before React can mask them; the inline script in the root layout
+   stamps data-amounts-hidden pre-paint, and this rule blurs money spans until
+   the PrivacyProvider mounts and adds .zero-hydrated (at which point the text
+   is already "$••••••", so the blur is no longer needed). See privacy-provider.tsx. */
+html[data-amounts-hidden="1"]:not(.zero-hydrated) .zero-amount {
+  filter: blur(0.45em);
+  user-select: none;
+}
+
+/* Privacy / demo mode: make disabled controls read as clearly inactive. The
+   app-wide disabled convention is opacity-50, but a saturated brand-green
+   submit (e.g. a money-entry "Save"/"Add expense" locked while amounts are
+   hidden) still looks clickable at 50%. Scoped to demo mode via the same
+   data attribute, so normal disabled states elsewhere are untouched. */
+html[data-amounts-hidden="1"] button:disabled:not(.zero-amount) {
+  opacity: 0.4;
+  filter: grayscale(0.7);
+}
