@@ -307,7 +307,7 @@ if any, live in `CLAUDE.local.md`):
   the one manual step, and it's easy to forget.
 - **`pre-push`** rejects deletion and non-fast-forward pushes to `main` only;
   feature branches force-push freely.
-- **`pre-commit`** rejects staged `*.db`, `.env*` (bar `.env.example`), backups,
+- **`pre-commit`** runs the `/pr` privacy scan on the staged lines, and rejects staged `*.db`, `.env*` (bar `.env.example`), backups,
   `YNAB*`, `scripts/historical/`, and any blob over 5 MiB.
 - Both are **speed bumps, not locks** — `--no-verify` bypasses either, by design.
 - **Open PRs with `/pr`** (`.claude/skills/pr/`). It runs `scripts/scan.sh` — a hard
@@ -316,6 +316,8 @@ if any, live in `CLAUDE.local.md`):
   real values; the public repo must never contain them) — plus typecheck, lint
   and tests, then reads the whole diff for real money figures, merchants, people
   and real screenshots before opening the PR. Any finding stops it.
+- **CI** runs the same scan (generic patterns only) on every PR and push to `main`.
+- **`.planning/`** is gitignored: keep private notes there (a symlink to a private repo works well).
   They stop accidents and over-eager agents, not a determined push.
 - **`npm run mirror`** (`bin/mirror-push.sh`, run it from cron) pushes
   `--mirror` to the bare repo at `ZERO_MIRROR_URL`. **This is the only real

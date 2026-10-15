@@ -73,3 +73,6 @@ CLAUDE.local.md
 
 # Personal values the /pr privacy scan blocks (never commit)
 .privacy-denylist
+
+# Private planning notes, linked in from a separate private repo (never commit)
+/.planning
