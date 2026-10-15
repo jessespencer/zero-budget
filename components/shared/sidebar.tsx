@@ -9,6 +9,7 @@ import { useMaskedCurrency } from "@/components/shared/use-masked-currency";
 import { roundCents } from "@/lib/db-utils";
 import { APP_VERSION, AUTHOR_NAME, AUTHOR_URL } from "@/lib/version";
 import { SettingsMenu } from "./settings-menu";
+import { AboutDialog } from "./about-dialog";
 import {
   LayoutGrid,
   PieChart,
@@ -70,6 +71,7 @@ const SECTION_ORDER: { key: TypeSectionKey; title: string; types: AccountType[] 
 export function Sidebar({ accounts, closedAccounts, uncategorizedByAccount, payees, categories, categoryGroups, collapsed, onToggleCollapse }: SidebarProps) {
   const pathname = usePathname();
   const [addAccountOpen, setAddAccountOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
   const [, startTransition] = useTransition();
   const { toast } = useToast();
   // "closed" starts collapsed — it's an archive, not part of the daily view.
@@ -269,6 +271,7 @@ export function Sidebar({ accounts, closedAccounts, uncategorizedByAccount, paye
           payees={payees}
           categories={categories}
           categoryGroups={categoryGroups}
+          onOpenAbout={() => setAboutOpen(true)}
         />
         {/* Version + author credit. Margin lives on this div rather than a
             parent space-y for the focus-guard reason above. */}
@@ -279,12 +282,25 @@ export function Sidebar({ accounts, closedAccounts, uncategorizedByAccount, paye
           )}
         >
           {collapsed ? (
-            <span title={`Zero v${APP_VERSION} — built by ${AUTHOR_NAME}`}>
+            <button
+              type="button"
+              onClick={() => setAboutOpen(true)}
+              title={`Zero v${APP_VERSION} — built by ${AUTHOR_NAME}`}
+              className="hover:text-sidebar-foreground transition-colors"
+            >
               v{APP_VERSION}
-            </span>
+            </button>
           ) : (
             <>
-              v{APP_VERSION} &middot; Built by{" "}
+              <button
+                type="button"
+                onClick={() => setAboutOpen(true)}
+                title="About Zero"
+                className="hover:text-sidebar-foreground hover:underline transition-colors"
+              >
+                v{APP_VERSION}
+              </button>{" "}
+              &middot; Built by{" "}
               <a
                 href={AUTHOR_URL}
                 target="_blank"
@@ -298,6 +314,7 @@ export function Sidebar({ accounts, closedAccounts, uncategorizedByAccount, paye
         </div>
       </div>
       <AddAccountDialog open={addAccountOpen} onOpenChange={setAddAccountOpen} />
+      <AboutDialog open={aboutOpen} onOpenChange={setAboutOpen} />
     </aside>
   );
 }

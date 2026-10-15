@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Settings, SunMoon, Users, Eye, EyeOff } from "lucide-react";
+import { Settings, SunMoon, Users, Eye, EyeOff, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAmountsHidden } from "@/components/shared/privacy-provider";
 import {
@@ -23,6 +23,8 @@ type SettingsMenuProps = {
   payees: PayeeItem[];
   categories: { id: string; name: string; category_group_id: string }[];
   categoryGroups: { id: string; name: string; is_income: boolean; is_system?: boolean }[];
+  // The About dialog is owned by Sidebar, which also opens it from the footer version.
+  onOpenAbout: () => void;
 };
 
 // Sidebar-bottom global launcher. Replaces the standalone Theme toggle with a
@@ -34,6 +36,7 @@ export function SettingsMenu({
   payees,
   categories,
   categoryGroups,
+  onOpenAbout,
 }: SettingsMenuProps) {
   const { hidden: amountsHidden, toggle: toggleAmounts } = useAmountsHidden();
   const [mounted, setMounted] = useState(false);
@@ -85,6 +88,10 @@ export function SettingsMenu({
               <EyeOff className="h-3.5 w-3.5" />
             )}
             {amountsHidden ? "Show amounts" : "Hide amounts"}
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={onOpenAbout}>
+            <Info className="h-3.5 w-3.5" />
+            About Zero
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
