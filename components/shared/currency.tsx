@@ -41,7 +41,7 @@ export function Currency({
         // `.zero-amount` marks this as a maskable money span for the
         // pre-hydration anti-flash blur (globals.css). Sign colorization is
         // kept while hidden — a negative still reads red — it just hides digits.
-        "tabular-nums zero-amount",
+        "tabular-nums whitespace-nowrap zero-amount",
         colorize && amount > 0 && "text-positive",
         colorize && amount < 0 && "text-negative",
         colorize && amount === 0 && "text-muted-foreground",

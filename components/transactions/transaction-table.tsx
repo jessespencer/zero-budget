@@ -1168,7 +1168,7 @@ function buildColumns(): ColumnDef<TransactionWithDetails, unknown>[] {
     // Outflow
     columnHelper.accessor("amount", {
       id: "outflow",
-      size: 100,
+      size: 120,
       header: "Outflow",
       cell: (info) => {
         const meta = info.table.options.meta;
@@ -1187,7 +1187,7 @@ function buildColumns(): ColumnDef<TransactionWithDetails, unknown>[] {
     // Inflow
     columnHelper.accessor("amount", {
       id: "inflow",
-      size: 100,
+      size: 128,
       header: "Inflow",
       sortingFn: "basic",
       cell: (info) => {
