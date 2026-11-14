@@ -1,12 +1,12 @@
-<a href="https://zero.jessedestroys.com"><img alt="Zero — Budget down to zero. Personal budgeting that lives on your computer, not in someone's cloud." src="site/og.png"></a>
+<a href="https://zero.jessespencer.dev"><img alt="Zero — Budget down to zero. Personal budgeting that lives on your computer, not in someone's cloud." src="site/og.png"></a>
 
 **Personal budgeting that lives on your computer, not in someone's cloud.** 100% free and open source.
 
-[Website](https://zero.jessedestroys.com) · [Install](docs/INSTALL.md) · [Features](FEATURES.md) · [FAQ](https://zero.jessedestroys.com/faq)
+[Website](https://zero.jessespencer.dev) · [Install](docs/INSTALL.md) · [Features](FEATURES.md) · [FAQ](https://zero.jessespencer.dev/faq)
 
 Zero is envelope budgeting you run yourself. Your whole budget lives in one SQLite file: no account, no subscription, no bank connection, no telemetry. Copy that file and you've backed up everything.
 
-### [▶ View the demo](https://zero.jessedestroys.com/#product)
+### [▶ View the demo](https://zero.jessespencer.dev/#product)
 
 ## What's inside
 
@@ -20,7 +20,7 @@ Zero is envelope budgeting you run yourself. Your whole budget lives in one SQLi
 - **AI import** — hand a statement to Claude Code or Codex and the bundled `import-txns` skill adds only what's missing. It runs in your agent, never in Zero. [How it works](docs/AI-IMPORT.md).
 - **Transfer plan** — your budget against real balances, as a checklist of transfers to make.
 
-See it all at **[zero.jessedestroys.com](https://zero.jessedestroys.com)**.
+See it all at **[zero.jessespencer.dev](https://zero.jessespencer.dev)**.
 
 ## Quick start
 

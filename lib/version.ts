@@ -6,8 +6,8 @@
 // literal "dev" is more honest than a stale hardcoded number.
 export const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
 
-export const AUTHOR_NAME = "jessedestroys.com";
-export const AUTHOR_URL = "https://jessedestroys.com";
+export const AUTHOR_NAME = "jessespencer.dev";
+export const AUTHOR_URL = "https://jessespencer.dev";
 
 // About dialog. A fork points these at its own repo and keeps the rest.
 export const REPO_URL = "https://github.com/jessespencer/zero-budget";
