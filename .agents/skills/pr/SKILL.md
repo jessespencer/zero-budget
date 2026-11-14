@@ -66,7 +66,7 @@ Flag anything that describes **the author's real life or data**:
 |---|---|---|
 | Real money | "a +$27,500 boat sale", "the card opened at −$8,412.17", "$61,930 over 2015–2024", counts of real transactions | Round illustrative numbers; `seed:dev` demo values; format examples like `$1,234.56` |
 | Real merchants / payees / institutions tied to the author | "those rows were Acme Hardware, Craft Barn…" (when they're the author's real ones) | Generic examples (`Roasters Coffee`, `Sunrise Grocery`, `KROGER #1234` in a made-up CSV) |
-| People | names, "my wife", kids' names or ages, employer, town, street | The public `jessedestroys.com` credit |
+| People | names, "my wife", kids' names or ages, employer, town, street | The public `jessespencer.dev` credit |
 | Infrastructure | real hosts, IPs, ssh targets, tailnet names, paths under a home dir | `me@192.168.1.50`, `tail-abcd.ts.net`, `<main-checkout>` placeholders |
 | Data-bearing files | screenshots of a real budget, CSV/JSON fixtures exported from real accounts, any database | Screenshots from `npm run site:assets` against the `seed:dev` household (Everyday Checking, High Yield Savings, Visa Card, Wallet) |
 | Private planning | `.planning/` content, notes-repo links, private issue links | — |

@@ -1,6 +1,9 @@
 // The launch site (site/) on Cloudflare, as static assets — no build step.
-// Served at https://zero.jessedestroys.com (jessedestroys.com's DNS is on
-// Cloudflare; the custom domain below creates its record and certificate).
+// Served at https://zero.jessespencer.dev (DNS on Cloudflare; each custom
+// domain below creates its record and certificate). zero.jessedestroys.com is
+// the old address: it stays attached only so Cloudflare's redirect rule on that
+// zone can 301 it to the new one, so don't drop it from the list. Deploys
+// replace the Worker's custom domains with exactly this list.
 // Deploy: `npx wrangler@4 deploy`, or connect the PUBLIC repo in the Cloudflare
 // dashboard (Workers Builds runs the same command). Never connect this private
 // repo: its history is why the open-source release ships to a fresh one.
@@ -11,5 +14,8 @@
   "assets": {
     "directory": "./site"
   },
-  "routes": [{ "pattern": "zero.jessedestroys.com", "custom_domain": true }]
+  "routes": [
+    { "pattern": "zero.jessespencer.dev", "custom_domain": true },
+    { "pattern": "zero.jessedestroys.com", "custom_domain": true }
+  ]
 }
