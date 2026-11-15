@@ -1541,10 +1541,17 @@ export async function bulkMoveTransactionsToAccountWithSnapshot(
   db.transaction(() => {
     const placeholders = ids.map(() => "?").join(",");
 
+    // Transfer legs are skipped, not moved. Moving ONE leg would leave its
+    // sibling pointing at the old account — a pair that no longer mirrors and
+    // that findTransferSibling can never match again. A transfer changes
+    // accounts through updateTransferPairWithSnapshot, which rewrites both
+    // legs. The transactions toolbar already filters legs out of the
+    // selection; this makes the action safe for any caller.
     const existing = db
       .prepare(
         `SELECT id, account_id, amount, date, approved FROM transactions
-         WHERE id IN (${placeholders}) AND user_id = ?`
+         WHERE id IN (${placeholders}) AND user_id = ?
+           AND transfer_account_id IS NULL`
       )
       .all(...ids, DEFAULT_USER_ID) as {
       id: string;
@@ -1584,11 +1591,13 @@ export async function bulkMoveTransactionsToAccountWithSnapshot(
       });
     }
 
-    // Bulk update — idempotent for rows already on the destination
+    // Bulk update — idempotent for rows already on the destination. Scoped
+    // to the rows snapshotted above so a skipped transfer leg stays put.
+    const movedIds = existing.map((row) => row.id);
     db.prepare(
       `UPDATE transactions SET account_id = ?, updated_at = ?
-       WHERE id IN (${placeholders}) AND user_id = ?`
-    ).run(newAccountId, timestamp, ...ids, DEFAULT_USER_ID);
+       WHERE id IN (${movedIds.map(() => "?").join(",")}) AND user_id = ?`
+    ).run(newAccountId, timestamp, ...movedIds, DEFAULT_USER_ID);
   })();
 
   revalidatePath("/transactions");
@@ -1916,9 +1925,14 @@ export async function duplicateTransactions(ids: string[]): Promise<string[]> {
 
   db.transaction(() => {
     const placeholders = ids.map(() => "?").join(",");
+    // Transfer legs are skipped: copying ONE leg would mint a transfer with
+    // no other side, moving one account's balance with nothing to offset it.
+    // The transactions toolbar already filters legs out of the selection;
+    // this makes the action safe for any caller.
     const originals = db
       .prepare(
-        `SELECT * FROM transactions WHERE id IN (${placeholders}) AND user_id = ?`
+        `SELECT * FROM transactions
+          WHERE id IN (${placeholders}) AND user_id = ? AND transfer_account_id IS NULL`
       )
       .all(...ids, DEFAULT_USER_ID) as Record<string, unknown>[];
 
