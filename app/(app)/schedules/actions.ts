@@ -362,54 +362,12 @@ export async function postScheduleTransaction(
   if (!schedule) return;
 
   const txnDate = useToday ? today() : (schedule.next_date as string);
-  const txnId = newId();
-  const timestamp = now();
-  const amount = schedule.amount as number;
-  const accountId = schedule.account_id as string;
-  const payee = schedule.payee as string | null;
-  const categoryId = schedule.category_id as string | null;
 
   db.transaction(() => {
     // Create the real transaction. Scheduled posts feel like desktop
     // automation (cron-triggered or "Pay now" from the desktop schedules
     // table), so the source flag is 'desktop'. See SEED-014 / migration 018.
-    db.prepare(
-      `INSERT INTO transactions
-         (id, user_id, date, payee, memo, amount, account_id, category_id,
-          cleared, approved, schedule_id, source, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 1, ?, 'desktop', ?, ?)`
-    ).run(
-      txnId,
-      DEFAULT_USER_ID,
-      txnDate,
-      payee,
-      schedule.memo as string | null,
-      amount,
-      accountId,
-      categoryId,
-      id,
-      timestamp,
-      timestamp
-    );
-
-    // Update account balance — gated by txn date (260603-bdb).
-    applyToBalance(db, {
-      account_id: accountId,
-      date: txnDate,
-      amount,
-      // Posted schedules insert approved = 1 (see the INSERT above).
-      approved: true,
-    });
-
-    // Upsert payee for auto-complete
-    if (payee) {
-      db.prepare(
-        `INSERT INTO payees (id, user_id, name, default_category_id)
-         VALUES (?, ?, ?, ?)
-         ON CONFLICT(user_id, name) DO UPDATE SET
-           default_category_id = COALESCE(payees.default_category_id, excluded.default_category_id)`
-      ).run(newId(), DEFAULT_USER_ID, payee, categoryId);
-    }
+    insertScheduledTransaction(db, schedule, txnDate);
 
     // Advance schedule to next date
     advanceScheduleInTransaction(db, schedule);
@@ -491,78 +449,127 @@ export async function postDueSchedules({
   const db = getDb();
   const todayStr = today();
 
-  const dueSchedules = db
-    .prepare(
-      `SELECT s.* FROM scheduled_transactions s
-       WHERE s.user_id = ? AND s.completed = 0 AND s.posts_transaction = 1
-         AND s.next_date <= ?
-         AND NOT EXISTS (
-           SELECT 1 FROM transactions t
-           WHERE t.schedule_id = s.id AND t.date = s.next_date AND t.user_id = ?
-         )`
-    )
-    .all(DEFAULT_USER_ID, todayStr, DEFAULT_USER_ID) as Record<string, unknown>[];
+  const dueIds = (
+    db
+      .prepare(
+        `SELECT id FROM scheduled_transactions
+         WHERE user_id = ? AND completed = 0 AND posts_transaction = 1
+           AND next_date <= ?`
+      )
+      .all(DEFAULT_USER_ID, todayStr) as { id: string }[]
+  ).map((row) => row.id);
 
-  for (const schedule of dueSchedules) {
-    const txnId = newId();
-    const timestamp = now();
-    const amount = schedule.amount as number;
-    const accountId = schedule.account_id as string;
-    const payee = schedule.payee as string | null;
-    const categoryId = schedule.category_id as string | null;
-    const scheduleId = schedule.id as string;
+  const readSchedule = db.prepare(
+    `SELECT * FROM scheduled_transactions WHERE id = ? AND user_id = ?`
+  );
+  const alreadyPosted = db.prepare(
+    `SELECT 1 FROM transactions
+     WHERE schedule_id = ? AND date = ? AND user_id = ? LIMIT 1`
+  );
 
-    db.transaction(() => {
-      // Auto-posted due schedules also stamp as 'desktop' — see
-      // postScheduleTransaction above for rationale.
-      db.prepare(
-        `INSERT INTO transactions
-           (id, user_id, date, payee, memo, amount, account_id, category_id,
-            cleared, approved, schedule_id, source, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 1, ?, 'desktop', ?, ?)`
-      ).run(
-        txnId,
-        DEFAULT_USER_ID,
-        schedule.next_date as string,
-        payee,
-        schedule.memo as string | null,
-        amount,
-        accountId,
-        categoryId,
-        scheduleId,
-        timestamp,
-        timestamp
-      );
+  let changed = false;
 
-      // Gated by the schedule's next_date (260603-bdb). Past-due schedules
-      // dated before the cutoff are inert.
-      applyToBalance(db, {
-        account_id: accountId,
-        date: schedule.next_date as string,
-        amount,
-        // Auto-posted schedules insert approved = 1 (see the INSERT above).
-        approved: true,
-      });
-
-      if (payee) {
-        db.prepare(
-          `INSERT INTO payees (id, user_id, name, default_category_id)
-           VALUES (?, ?, ?, ?)
-           ON CONFLICT(user_id, name) DO UPDATE SET
-             default_category_id = COALESCE(payees.default_category_id, excluded.default_category_id)`
-        ).run(newId(), DEFAULT_USER_ID, payee, categoryId);
+  for (const id of dueIds) {
+    // Post EVERY missed occurrence, not just the oldest one. The scan used to
+    // post one per schedule per call, so after a few months away a monthly
+    // schedule caught up one month per page load and the balances shifted on
+    // each navigation until it was current.
+    //
+    // Each occurrence is its own transaction, so a failure part-way keeps the
+    // earlier posts and the schedule's next_date in step with them. The loop
+    // ends because every pass moves next_date strictly forward or completes
+    // the schedule; the cap is a backstop against a recurrence bug, not a
+    // limit anyone should reach.
+    for (let pass = 0; pass < MAX_CATCH_UP_POSTS; pass++) {
+      const schedule = readSchedule.get(id, DEFAULT_USER_ID) as
+        | Record<string, unknown>
+        | undefined;
+      if (!schedule || schedule.completed || (schedule.next_date as string) > todayStr) {
+        break;
       }
 
-      advanceScheduleInTransaction(db, schedule);
-    })();
+      const dueDate = schedule.next_date as string;
+      db.transaction(() => {
+        // The duplicate guard. A transaction already linked to this schedule
+        // on its due date means the occurrence is paid — the schedules table
+        // shows it as "paid" — so the schedule advances WITHOUT posting a
+        // second copy. It used to exclude the schedule from the scan instead,
+        // which never advanced it: re-dating a posted transaction onto the
+        // next due date left the schedule stuck for good.
+        if (!alreadyPosted.get(id, dueDate, DEFAULT_USER_ID)) {
+          // Auto-posted due schedules also stamp as 'desktop' — see
+          // postScheduleTransaction above for rationale.
+          insertScheduledTransaction(db, schedule, dueDate);
+        }
+        advanceScheduleInTransaction(db, schedule);
+      })();
+      changed = true;
+    }
   }
 
-  if (dueSchedules.length > 0 && revalidate) {
+  if (changed && revalidate) {
     revalidateAll();
   }
 }
 
 // ─── Internal helpers ────────────────────────────────────────
+
+// See the loop in postDueSchedules. A daily schedule left alone for a decade
+// is ~3,650 occurrences; anything past this cap waits for the next page load.
+const MAX_CATCH_UP_POSTS = 5000;
+
+// Insert one posted occurrence of `schedule`, dated `date`, and move the
+// balance for it. Callers hold a transaction and advance the schedule after.
+function insertScheduledTransaction(
+  db: ReturnType<typeof getDb>,
+  schedule: Record<string, unknown>,
+  date: string
+) {
+  const timestamp = now();
+  const amount = schedule.amount as number;
+  const accountId = schedule.account_id as string;
+  const payee = schedule.payee as string | null;
+  const categoryId = schedule.category_id as string | null;
+
+  db.prepare(
+    `INSERT INTO transactions
+       (id, user_id, date, payee, memo, amount, account_id, category_id,
+        cleared, approved, schedule_id, source, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 1, ?, 'desktop', ?, ?)`
+  ).run(
+    newId(),
+    DEFAULT_USER_ID,
+    date,
+    payee,
+    schedule.memo as string | null,
+    amount,
+    accountId,
+    categoryId,
+    schedule.id as string,
+    timestamp,
+    timestamp
+  );
+
+  // Gated by the transaction's date (260603-bdb): occurrences dated before
+  // the budget start month are historical and don't move the balance.
+  applyToBalance(db, {
+    account_id: accountId,
+    date,
+    amount,
+    // Posted schedules insert approved = 1 (see the INSERT above).
+    approved: true,
+  });
+
+  // Upsert payee for auto-complete
+  if (payee) {
+    db.prepare(
+      `INSERT INTO payees (id, user_id, name, default_category_id)
+       VALUES (?, ?, ?, ?)
+       ON CONFLICT(user_id, name) DO UPDATE SET
+         default_category_id = COALESCE(payees.default_category_id, excluded.default_category_id)`
+    ).run(newId(), DEFAULT_USER_ID, payee, categoryId);
+  }
+}
 
 function advanceScheduleInTransaction(
   db: ReturnType<typeof getDb>,
