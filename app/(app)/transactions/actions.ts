@@ -723,11 +723,21 @@ export async function updateTransaction(
             amount: -oldAmount,
           });
         }
-      } else if (updates.amount !== undefined || updates.account_id !== undefined) {
+      } else if (
+        updates.amount !== undefined ||
+        updates.account_id !== undefined ||
+        updates.date !== undefined
+      ) {
         // No transition. `approved` is passed to every leg, so editing a
         // pending row is a balance no-op — its money was never applied, so
         // there is nothing to reverse and nothing to re-apply; posting later
         // picks up the edited amount.
+        //
+        // A date change counts on its own: moving a row across the cutoff
+        // takes its whole amount into or out of the balance even when the
+        // amount is untouched. This branch used to require an amount or
+        // account change, so a date-only edit across the boundary left the
+        // balance stale (found by the money-invariant suite).
         if (oldAccountId !== newAccountId) {
           // Moving to a different account: reverse from old, apply to new
           applyToBalance(db, {
@@ -743,33 +753,31 @@ export async function updateTransaction(
             approved: isApproved,
           });
         } else {
-          // Same account: apply the diff. When the date crosses the cutoff,
-          // the diff is split into reverse-old + apply-new so each leg is
-          // gated by the correct date. When the date didn't change (or both
-          // dates fall on the same side), the diff is a single delta.
+          // Same account. When the date changed, reverse-old + apply-new so
+          // each leg is gated by its own date — that is what moves the full
+          // amount when the row crosses the cutoff, whether or not the amount
+          // changed too. When the date didn't change, the diff is one delta.
           const diff = newAmount - oldAmount;
-          if (diff !== 0) {
-            if (oldDate !== newDate) {
-              applyToBalance(db, {
-                account_id: oldAccountId,
-                date: oldDate,
-                amount: -oldAmount,
-                approved: isApproved,
-              });
-              applyToBalance(db, {
-                account_id: oldAccountId,
-                date: newDate,
-                amount: newAmount,
-                approved: isApproved,
-              });
-            } else {
-              applyToBalance(db, {
-                account_id: oldAccountId,
-                date: newDate,
-                amount: diff,
-                approved: isApproved,
-              });
-            }
+          if (oldDate !== newDate) {
+            applyToBalance(db, {
+              account_id: oldAccountId,
+              date: oldDate,
+              amount: -oldAmount,
+              approved: isApproved,
+            });
+            applyToBalance(db, {
+              account_id: oldAccountId,
+              date: newDate,
+              amount: newAmount,
+              approved: isApproved,
+            });
+          } else if (diff !== 0) {
+            applyToBalance(db, {
+              account_id: oldAccountId,
+              date: newDate,
+              amount: diff,
+              approved: isApproved,
+            });
           }
         }
       }
@@ -808,41 +816,43 @@ export async function updateTransaction(
         const siblingParams: unknown[] = [];
 
         if (updates.amount !== undefined) {
-          const newSiblingAmount = -updates.amount;
-          const oldSiblingAmount = Number(sibling.amount);
           siblingSet.push("amount = ?");
-          siblingParams.push(newSiblingAmount);
+          siblingParams.push(-updates.amount);
+        }
 
+        if (updates.amount !== undefined || updates.date !== undefined) {
           // Sibling stays on its own account — only the parent leg may move
-          // accounts. Adjust the sibling's balance for the amount diff. Each
-          // leg gated by its own date (260603-bdb) so if the user also moved
-          // the date across the cutoff, the reverse and apply are gated
-          // independently.
+          // accounts. Adjust the sibling's balance for the amount and/or date
+          // change. Each leg is gated by its own date (260603-bdb): a date
+          // change reverses the old shape and applies the new one, so a
+          // date-only edit across the cutoff moves the sibling's full amount
+          // exactly as it does the parent's.
+          const oldSiblingAmount = Number(sibling.amount);
+          const newSiblingAmount =
+            updates.amount !== undefined ? -updates.amount : oldSiblingAmount;
           const oldSibDate = sibling.date;
           const newSibDate = updates.date ?? sibling.date;
           const diff = newSiblingAmount - oldSiblingAmount;
-          if (diff !== 0) {
-            if (oldSibDate !== newSibDate) {
-              applyToBalance(db, {
-                account_id: sibling.account_id,
-                date: oldSibDate,
-                amount: -oldSiblingAmount,
-                approved: sibling.approved,
-              });
-              applyToBalance(db, {
-                account_id: sibling.account_id,
-                date: newSibDate,
-                amount: newSiblingAmount,
-                approved: sibling.approved,
-              });
-            } else {
-              applyToBalance(db, {
-                account_id: sibling.account_id,
-                date: newSibDate,
-                amount: diff,
-                approved: sibling.approved,
-              });
-            }
+          if (oldSibDate !== newSibDate) {
+            applyToBalance(db, {
+              account_id: sibling.account_id,
+              date: oldSibDate,
+              amount: -oldSiblingAmount,
+              approved: sibling.approved,
+            });
+            applyToBalance(db, {
+              account_id: sibling.account_id,
+              date: newSibDate,
+              amount: newSiblingAmount,
+              approved: sibling.approved,
+            });
+          } else if (diff !== 0) {
+            applyToBalance(db, {
+              account_id: sibling.account_id,
+              date: newSibDate,
+              amount: diff,
+              approved: sibling.approved,
+            });
           }
         }
 

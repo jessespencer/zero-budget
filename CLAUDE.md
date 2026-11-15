@@ -216,6 +216,15 @@ been undone once already, not an error to swallow.
 Allowlists are empty. A failure is a violation introduced today — fix the call site, don't
 re-add an entry.
 
+### Money invariant tests
+
+`__tests__/unit/invariants/money-invariants.test.ts` drives the real server actions with
+seeded random sequences and, after every step, checks balances, transfer pairs, splits,
+budget conservation (through `getBudgetData`), and undo round trips. A failure prints its
+seed and op log; re-run one with `MONEY_INVARIANT_SEED=<n> npx vitest run __tests__/unit/invariants`,
+or widen the sweep with `MONEY_INVARIANT_SEEDS=<count>`. A new money-moving action should
+get an op in that file's `OPS` table.
+
 ### System visibility — every mutation must acknowledge itself
 
 Feedback is chosen by **what the mutation does**, never by what kind of
