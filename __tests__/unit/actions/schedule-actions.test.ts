@@ -348,3 +348,104 @@ describe("deleteScheduleWithSnapshot / restoreScheduleSnapshot", () => {
     expect(count.n).toBe(1);
   });
 });
+
+describe("postDueSchedules catch-up", () => {
+  const seedMonthly = async () => {
+    const { createSchedule } = await import("@/app/(app)/schedules/actions");
+    await createSchedule({
+      account_id: "acct-1",
+      amount: -1500,
+      frequency: "monthly",
+      start_date: "2026-04-01",
+      day_of_month: 1,
+      payee: "Landlord",
+      name: "Rent",
+    });
+    return db
+      .prepare("SELECT * FROM scheduled_transactions WHERE user_id = ? LIMIT 1")
+      .get(USER_ID) as Record<string, unknown>;
+  };
+
+  const postedDates = () =>
+    (
+      db
+        .prepare(
+          "SELECT date FROM transactions WHERE user_id = ? AND schedule_id IS NOT NULL ORDER BY date"
+        )
+        .all(USER_ID) as { date: string }[]
+    ).map((r) => r.date);
+
+  const nextDate = (id: string) =>
+    (
+      db.prepare("SELECT next_date FROM scheduled_transactions WHERE id = ?").get(id) as {
+        next_date: string;
+      }
+    ).next_date;
+
+  const balance = () =>
+    (
+      db.prepare("SELECT current_balance FROM accounts WHERE id = 'acct-1'").get() as {
+        current_balance: number;
+      }
+    ).current_balance;
+
+  it("posts every missed occurrence in one call, not one per page load", async () => {
+    const { postDueSchedules } = await import("@/app/(app)/schedules/actions");
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-07-15T12:00:00"));
+
+    const schedule = await seedMonthly();
+    await postDueSchedules({ revalidate: false });
+
+    expect(postedDates()).toEqual(["2026-04-01", "2026-05-01", "2026-06-01", "2026-07-01"]);
+    expect(nextDate(schedule.id as string)).toBe("2026-08-01");
+    expect(balance()).toBe(-6000);
+
+    // A second page load finds nothing left to do.
+    await postDueSchedules({ revalidate: false });
+    expect(postedDates()).toHaveLength(4);
+  });
+
+  it("advances past a due date that already has a posted transaction instead of sticking", async () => {
+    const { postScheduleTransaction, postDueSchedules } = await import(
+      "@/app/(app)/schedules/actions"
+    );
+    const { updateTransaction } = await import("@/app/(app)/transactions/actions");
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-04-15T12:00:00"));
+
+    const schedule = await seedMonthly();
+    const id = schedule.id as string;
+    await postScheduleTransaction(id); // posts 2026-04-01, next is 2026-05-01
+
+    // Re-date the posted transaction onto the schedule's next due date.
+    const posted = db
+      .prepare("SELECT id FROM transactions WHERE schedule_id = ?")
+      .get(id) as { id: string };
+    await updateTransaction(posted.id, { date: "2026-05-01" });
+
+    // Once that date is due, the occurrence reads as paid: the schedule moves
+    // on without a second copy, and keeps posting after that.
+    vi.setSystemTime(new Date("2026-06-15T12:00:00"));
+    await postDueSchedules({ revalidate: false });
+
+    expect(postedDates()).toEqual(["2026-05-01", "2026-06-01"]);
+    expect(nextDate(id)).toBe("2026-07-01");
+    expect(balance()).toBe(-3000);
+  });
+
+  it("leaves reminder-only schedules alone", async () => {
+    const { postDueSchedules } = await import("@/app/(app)/schedules/actions");
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-07-15T12:00:00"));
+
+    const schedule = await seedMonthly();
+    db.prepare("UPDATE scheduled_transactions SET posts_transaction = 0 WHERE id = ?").run(
+      schedule.id
+    );
+    await postDueSchedules({ revalidate: false });
+
+    expect(postedDates()).toEqual([]);
+    expect(nextDate(schedule.id as string)).toBe("2026-04-01");
+  });
+});
