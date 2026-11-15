@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import Database from "better-sqlite3";
 import { createTestDb, setTestDb, clearTestDb } from "../../setup/test-db";
 import { __resetCutoffCache } from "@/lib/balance";
@@ -9,7 +9,7 @@ import { computeBudgetMonth } from "@/lib/budget-engine";
 // Every other money test in this repo checks one hand-written example. This
 // one drives the real server actions with long random sequences — create,
 // edit, delete, move, duplicate, approve/unapprove, transfer, split, assign,
-// move money, adjust a balance, and undo — and after EVERY step asserts the
+// move money, adjust a balance, post and auto-post schedules, and undo — and after EVERY step asserts the
 // promises the product makes, computed independently from the rows:
 //
 //   1. Balance      — each account's current_balance equals the sum of its
@@ -33,8 +33,6 @@ import { computeBudgetMonth } from "@/lib/budget-engine";
 // are documented gaps (see the comments at the op generators below):
 //   - approving / un-approving one leg of a transfer (known gap behind
 //     FEATURES.BANK_SYNC, documented in updateTransaction)
-//   - moving one transfer leg to another account, or duplicating one leg,
-//     outside updateTransferPairWithSnapshot
 //   - changing the amount of a split parent without re-saving its splits
 
 const USER_ID = "00000000-0000-0000-0000-000000000000";
@@ -42,6 +40,8 @@ const CUTOFF = "2026-05-01";
 // A month after every date and assignment the generator can produce, so the
 // conservation identity sees the whole ledger and no future assignments.
 const HORIZON = "2099-01-01";
+// Later than every entry in DATES, so "today" never collides with them.
+const TODAY = "2026-09-15";
 const EPSILON = 0.005;
 
 const ACCOUNTS = ["acct-chk", "acct-sav", "acct-cc"] as const;
@@ -99,6 +99,12 @@ function makeRng(seed: number): Rng {
 let db: Database.Database;
 
 beforeEach(() => {
+  // Pin "today": schedules post up to today and balance adjustments are dated
+  // today, so a real clock would make the same seed behave differently next
+  // month. Only Date is faked — timers stay real for the async actions.
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date(`${TODAY}T12:00:00`));
+
   db = createTestDb();
   setTestDb(db);
   __resetCutoffCache();
@@ -125,6 +131,7 @@ afterEach(() => {
   clearTestDb();
   __resetCutoffCache();
   db.close();
+  vi.useRealTimers();
 });
 
 // ── Row helpers ──────────────────────────────────────────────────────
@@ -494,12 +501,13 @@ const bulkDelete: Op = async (rng) => {
   };
 };
 
-// Transfer legs change accounts through updateTransferPairWithSnapshot, not
-// the bulk "move to account" action.
+// The selection may include transfer legs. The UI filters them out before
+// calling these two actions; the actions must hold the line on their own too,
+// because moving or copying ONE leg leaves a pair that no longer mirrors.
 const bulkMove: Op = async (rng) => {
   const { bulkMoveTransactionsToAccountWithSnapshot, restoreAccountMoveSnapshot } =
     await txnActions();
-  const ids = plainTxns()
+  const ids = allTxns()
     .filter(() => rng.chance(0.4))
     .map((t) => t.id);
   if (ids.length === 0) return null;
@@ -513,11 +521,12 @@ const bulkMove: Op = async (rng) => {
 
 const duplicate: Op = async (rng) => {
   const { duplicateTransactions, bulkDeleteTransactionsWithSnapshot } = await txnActions();
-  const ids = plainTxns()
+  const ids = allTxns()
     .filter(() => rng.chance(0.25))
     .map((t) => t.id);
   if (ids.length === 0) return null;
   const newIds = await duplicateTransactions(ids);
+  if (newIds.length === 0) return { label: `duplicate ${ids.length} (nothing copied)` };
   return {
     label: `duplicate ${ids.length}`,
     undo: async () => {
@@ -644,6 +653,82 @@ const moveMoney: Op = async (rng) => {
   };
 };
 
+// ── Schedules ────────────────────────────────────────────────────────
+
+const scheduleActions = () => import("@/app/(app)/schedules/actions");
+
+function openScheduleIds(): string[] {
+  return (
+    db
+      .prepare(
+        "SELECT id FROM scheduled_transactions WHERE user_id = ? AND completed = 0 ORDER BY rowid"
+      )
+      .all(USER_ID) as { id: string }[]
+  ).map((r) => r.id);
+}
+
+// Start dates come from DATES, so some schedules begin before the budget
+// start month: their early occurrences post as historical rows that must not
+// move a balance.
+const createSchedule: Op = async (rng) => {
+  const { createSchedule: create } = await scheduleActions();
+  const input = {
+    account_id: rng.pick(ACCOUNTS),
+    category_id: rng.chance(0.8) ? rng.pick(CATEGORIES) : undefined,
+    amount: signedAmount(rng),
+    frequency: rng.pick(["once", "weekly", "monthly"] as const),
+    start_date: rng.pick(DATES),
+  };
+  await create(input);
+  return {
+    label: `schedule ${input.frequency} ${input.amount} in ${input.account_id} from ${input.start_date}`,
+  };
+};
+
+// "Pay now" from the schedules table — on the due date, or dated today.
+const postSchedule: Op = async (rng) => {
+  const { postScheduleTransaction } = await scheduleActions();
+  const ids = openScheduleIds();
+  if (ids.length === 0) return null;
+  const id = rng.pick(ids);
+  const useToday = rng.chance(0.4);
+  await postScheduleTransaction(id, useToday);
+  return { label: `post schedule ${id.slice(0, 8)}${useToday ? " dated today" : ""}` };
+};
+
+// The catch-up the (app) layout runs on every page load.
+const catchUpSchedules: Op = async () => {
+  const { postDueSchedules } = await scheduleActions();
+  await postDueSchedules({ revalidate: false });
+  return { label: "auto-post due schedules" };
+};
+
+const skipSchedule: Op = async (rng) => {
+  const { skipScheduleDate } = await scheduleActions();
+  const ids = openScheduleIds();
+  if (ids.length === 0) return null;
+  const id = rng.pick(ids);
+  await skipScheduleDate(id);
+  return { label: `skip schedule ${id.slice(0, 8)}` };
+};
+
+// Deleting a schedule must leave the transactions it already posted (and the
+// balances they moved) alone; so must restoring it.
+const deleteSchedule: Op = async (rng) => {
+  const { deleteScheduleWithSnapshot, restoreScheduleSnapshot } = await scheduleActions();
+  const ids = openScheduleIds();
+  if (ids.length === 0) return null;
+  const id = rng.pick(ids);
+  const snapshot = await deleteScheduleWithSnapshot(id);
+  if (!snapshot) return { label: `delete schedule ${id.slice(0, 8)} (not found)` };
+  return {
+    label: `delete schedule ${id.slice(0, 8)}`,
+    undo: async () => {
+      await restoreScheduleSnapshot(snapshot);
+    },
+  };
+};
+
 // Weighted so the ledger grows: creation outpaces deletion.
 const OPS: readonly [weight: number, name: string, op: Op][] = [
   [14, "createTxn", createTxn],
@@ -663,6 +748,11 @@ const OPS: readonly [weight: number, name: string, op: Op][] = [
   [2, "unsplitTxn", unsplitTxn],
   [8, "assign", assign],
   [4, "moveMoney", moveMoney],
+  [5, "createSchedule", createSchedule],
+  [4, "postSchedule", postSchedule],
+  [4, "catchUpSchedules", catchUpSchedules],
+  [2, "skipSchedule", skipSchedule],
+  [2, "deleteSchedule", deleteSchedule],
 ];
 const TOTAL_WEIGHT = OPS.reduce((sum, [w]) => sum + w, 0);
 
@@ -759,5 +849,50 @@ describe("money invariants hold under random action sequences", () => {
     await updateTransaction(id, { date: "2026-05-01" });
     expect(balance()).toBe(-40);
     expect(checkBalances()).toBeNull();
+  });
+
+  // The second thing the sweep found, once transfer legs were allowed into
+  // the selection: handed ONE leg, "move to account" and "duplicate" both
+  // produced a transfer with no matching other side. The toolbar filters legs
+  // out, so this was a missing server-side guard rather than a live bug.
+  it("bulk move and duplicate skip transfer legs instead of breaking the pair", async () => {
+    const { createTransaction, bulkMoveTransactionsToAccountWithSnapshot, duplicateTransactions } =
+      await txnActions();
+    const { createTransferPairWithSnapshot } = await transferActions();
+
+    const { id: plainId } = await createTransaction({
+      date: "2026-06-15",
+      payee: "",
+      amount: -25,
+      account_id: "acct-chk",
+    });
+    const pair = await createTransferPairWithSnapshot({
+      fromAccountId: "acct-chk",
+      toAccountId: "acct-sav",
+      amount: 100,
+      date: "2026-06-15",
+    });
+    const before = moneyFingerprint();
+
+    // Duplicating a selection that includes a leg copies only the plain row.
+    const copies = await duplicateTransactions([plainId, pair.outflowTxnId]);
+    expect(copies).toHaveLength(1);
+    expect(checkTransfers()).toBeNull();
+    expect(checkBalances()).toBeNull();
+
+    // Moving a lone leg is a no-op, and says so in the snapshot.
+    const legOnly = await bulkMoveTransactionsToAccountWithSnapshot([pair.inflowTxnId], "acct-cc");
+    expect(legOnly.rows).toHaveLength(0);
+
+    // Moving a mixed selection moves the plain row and leaves the leg.
+    const mixed = await bulkMoveTransactionsToAccountWithSnapshot(
+      [plainId, pair.outflowTxnId],
+      "acct-cc"
+    );
+    expect(mixed.rows.map((r) => r.id)).toEqual([plainId]);
+    expect(checkTransfers()).toBeNull();
+    expect(checkBalances()).toBeNull();
+    expect(transferLegs()).toHaveLength(2);
+    expect(before).not.toBe(moneyFingerprint()); // the plain row really moved
   });
 });
