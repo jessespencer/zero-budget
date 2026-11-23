@@ -4,6 +4,7 @@ import fs from "fs";
 import { runMigrations } from "./migrations/runner";
 import { isDemoMode } from "./demo-config";
 import { getDemoDb } from "./demo";
+import { getDemoModeDb } from "./demo-mode";
 
 // Re-export reserved-id constants from a side-effect-free module so client
 // components can pull `STARTING_BALANCE_CATEGORY_ID` (etc.) by reaching into
@@ -26,9 +27,22 @@ export function resolveDbPath(): string {
   return process.env.ZERO_DB_PATH ?? path.join(process.cwd(), "data", "zero.db");
 }
 
+/**
+ * The database every query should use. Under `npm run demo` that's the
+ * visitor's sandbox (lib/demo.ts); while the in-app Demo mode is on, the
+ * sample database (lib/demo-mode.ts); otherwise the real one.
+ */
 export function getDb(): Database.Database {
-  // Under `npm run demo` each visitor has their own database (lib/demo.ts).
   if (isDemoMode()) return getDemoDb();
+  const real = getRealDb();
+  return getDemoModeDb(real, resolveDbPath()) ?? real;
+}
+
+/**
+ * The user's own database, even while Demo mode is on. Only for code that
+ * manages Demo mode itself — everything else goes through getDb().
+ */
+export function getRealDb(): Database.Database {
   if (globalThis.__zero_db) return globalThis.__zero_db;
 
   const dbPath = resolveDbPath();

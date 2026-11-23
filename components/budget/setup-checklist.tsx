@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/components/ui/toast";
+import { StartDemoModeDialog, useDemoMode } from "@/components/shared/demo-mode";
 import { AddAccountDialog } from "@/components/accounts/add-account-dialog";
 import { requestAddCategoryGroup } from "./add-group-request";
 import { setPrimaryAccount } from "@/app/(app)/accounts/[id]/actions";
@@ -45,6 +46,8 @@ export function SetupChecklist({ state, readyToAssign, totalIncome }: SetupCheck
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [addAccountOpen, setAddAccountOpen] = useState(false);
+  const [demoOpen, setDemoOpen] = useState(false);
+  const demoMode = useDemoMode();
 
   // Every action here changes something visible on this page (a step ticks,
   // the grid fills, the card goes away), so success needs no toast — only
@@ -186,7 +189,13 @@ export function SetupChecklist({ state, readyToAssign, totalIncome }: SetupCheck
         <span className="text-sm text-muted-foreground">
           {doneCount} of {steps.length}
         </span>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          {/* Look around a full budget first, then come back to an empty one. */}
+          {!complete && demoMode.available && (
+            <Button size="sm" variant="outline" disabled={demoMode.pending} onClick={() => setDemoOpen(true)}>
+              Explore sample data
+            </Button>
+          )}
           {complete ? (
             <Button size="sm" disabled={isPending} onClick={handleDismiss}>
               Done
@@ -229,6 +238,7 @@ export function SetupChecklist({ state, readyToAssign, totalIncome }: SetupCheck
       </ol>
 
       <AddAccountDialog open={addAccountOpen} onOpenChange={setAddAccountOpen} stayOnPage />
+      <StartDemoModeDialog open={demoOpen} onOpenChange={setDemoOpen} />
     </section>
   );
 }

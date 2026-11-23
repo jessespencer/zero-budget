@@ -300,7 +300,7 @@ than inventing a new pattern.
 - **Production process**: managed by pm2 — `npm run deploy` builds and restarts; app runs at `http://localhost:4040`. Deploys whatever code is in the working directory (branch doesn't matter)
 - **Auto-start**: pm2 is configured with launchd to survive reboots (`pm2 startup` + `pm2 save`)
 - **Database path**: `ZERO_DB_PATH` env var overrides the default `data/zero.db` location
-- **Demo mode**: `ZERO_DEMO=1` (set only by `scripts/demo-server.mjs`) makes `getDb()` return a per-visitor sandbox from `lib/demo.ts`, keyed by a cookie through AsyncLocalStorage. Code that opens SQLite without `getDb()` would bypass it and serve every visitor one shared file, so always go through `getDb()`
+- **`getDb()` isn't always the real database.** Under `npm run demo` (`ZERO_DEMO=1`, set only by `scripts/demo-server.mjs`) it returns a per-visitor sandbox from `lib/demo.ts`, keyed by a cookie through AsyncLocalStorage. While the in-app Demo mode is on it returns the sample database from `lib/demo-mode.ts` (switched by an expiry in the real DB's `app_settings`). Code that opens SQLite another way bypasses both, so always go through `getDb()`; only Demo mode's own on/off code uses `getRealDb()`. The sample household itself lives in `lib/sample-data.mjs`, shared by `seed:dev`, the demo server and Demo mode
 - **Migrations**: live in `lib/migrations/files/` as numbered `.sql` files (e.g. `001_initial.sql`), run automatically on boot via `runMigrations()` in `lib/migrations/runner.ts`
 - **Adding schema changes**: create a new numbered file (e.g. `002_add_column.sql`) — never edit existing migration files
 - **Auto-backup**: the migration runner snapshots the database before applying new migrations (saved as `*.pre-migration-vN.backup`)
