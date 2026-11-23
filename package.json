@@ -18,6 +18,7 @@
     "db:migrate": "node scripts/apply-pending-migrations.mjs",
     "db:slot": "node scripts/db-slot.mjs",
     "seed:dev": "node scripts/seed-dev.mjs",
+    "demo": "node scripts/demo-server.mjs",
     "site": "node scripts/serve-site.mjs",
     "site:assets": "node scripts/capture-site-assets.mjs",
     "icons": "node scripts/render-icons.mjs",

@@ -16,6 +16,7 @@ npm run db:info      # Print database path, size, schema version, row counts
 npm run db:migrate   # Apply pending migrations without booting the app (see below — migrations otherwise run only at boot)
 npm run db:slot      # Switch the local dev DB between onboarding / seeded / full
 npm run seed:dev     # Wipe local dev DB and insert a demo household (4 accounts, 13 months of txns ending today, ~$500k tracked assets; Ready to assign lands on $0). Backs up first; refuses DBs under ~/.local/share/zero/ or in ZERO_PROTECTED_DB_PATHS.
+npm run demo         # Public demo on :4041 — each visitor gets a private copy of the seed:dev DB (needs `npm run build`; see docs/DEMO.md)
 npm run site         # Serve the launch site (site/ — static HTML/CSS, no build step) on http://localhost:4321; hosted on Cloudflare via wrangler.jsonc
 npm run site:assets  # Recapture the screenshots the site and README share (site/assets/, dark + light WebP), and og.png from an app running seed:dev data (SITE_APP_URL, default :3000; use a production build so no dev badge shows)
 npm run icons        # Regenerate every icon — app favicon/app icons, /quick PWA icons, and the site's favicons — from the Z mark (scripts/lib/z-mark.mjs; lime tile)
@@ -299,6 +300,7 @@ than inventing a new pattern.
 - **Production process**: managed by pm2 — `npm run deploy` builds and restarts; app runs at `http://localhost:4040`. Deploys whatever code is in the working directory (branch doesn't matter)
 - **Auto-start**: pm2 is configured with launchd to survive reboots (`pm2 startup` + `pm2 save`)
 - **Database path**: `ZERO_DB_PATH` env var overrides the default `data/zero.db` location
+- **Demo mode**: `ZERO_DEMO=1` (set only by `scripts/demo-server.mjs`) makes `getDb()` return a per-visitor sandbox from `lib/demo.ts`, keyed by a cookie through AsyncLocalStorage. Code that opens SQLite without `getDb()` would bypass it and serve every visitor one shared file, so always go through `getDb()`
 - **Migrations**: live in `lib/migrations/files/` as numbered `.sql` files (e.g. `001_initial.sql`), run automatically on boot via `runMigrations()` in `lib/migrations/runner.ts`
 - **Adding schema changes**: create a new numbered file (e.g. `002_add_column.sql`) — never edit existing migration files
 - **Auto-backup**: the migration runner snapshots the database before applying new migrations (saved as `*.pre-migration-vN.backup`)
