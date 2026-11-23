@@ -16,7 +16,7 @@ export function DemoBanner() {
       <div
         role="status"
         aria-label="Demo"
-        className="sticky top-0 z-50 flex h-7 items-center justify-center gap-2 bg-foreground px-3 text-xs text-background"
+        className="sticky top-0 z-50 flex h-7 items-center justify-center gap-2 bg-primary px-3 text-xs text-primary-foreground"
       >
         <span className="font-semibold uppercase tracking-wider">Demo</span>
         <span className="truncate opacity-90">
