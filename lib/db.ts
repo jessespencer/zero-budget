@@ -2,6 +2,8 @@ import Database from "better-sqlite3";
 import path from "path";
 import fs from "fs";
 import { runMigrations } from "./migrations/runner";
+import { isDemoMode } from "./demo-config";
+import { getDemoDb } from "./demo";
 
 // Re-export reserved-id constants from a side-effect-free module so client
 // components can pull `STARTING_BALANCE_CATEGORY_ID` (etc.) by reaching into
@@ -25,6 +27,8 @@ export function resolveDbPath(): string {
 }
 
 export function getDb(): Database.Database {
+  // Under `npm run demo` each visitor has their own database (lib/demo.ts).
+  if (isDemoMode()) return getDemoDb();
   if (globalThis.__zero_db) return globalThis.__zero_db;
 
   const dbPath = resolveDbPath();

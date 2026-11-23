@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { Geist_Mono } from "next/font/google";
 import "@fontsource-variable/figtree";
 import { DevModeBanner } from "@/components/shared/dev-mode-banner";
+import { DemoBanner } from "@/components/shared/demo-banner";
 import { PrivacyBanner } from "@/components/shared/privacy-banner";
 import { PrivacyProvider } from "@/components/shared/privacy-provider";
 import { ThemeProvider } from "@/components/shared/theme-provider";
@@ -88,6 +89,7 @@ export default function RootLayout({
         >
           <PrivacyProvider>
             <DevModeBanner />
+            <DemoBanner />
             <PrivacyBanner />
             {children}
           </PrivacyProvider>

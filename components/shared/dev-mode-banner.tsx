@@ -1,7 +1,9 @@
 import path from "node:path";
+import { isDemoMode } from "@/lib/demo-config";
 
 export function DevModeBanner() {
-  if (process.env.NEXT_PUBLIC_ZERO_DEV_MODE !== "1") return null;
+  // The demo has its own banner, and its database isn't ZERO_DB_PATH.
+  if (process.env.NEXT_PUBLIC_ZERO_DEV_MODE !== "1" || isDemoMode()) return null;
 
   // Mirror the resolution in lib/db.ts so the banner shows the actual file in use.
   const dbPath =
