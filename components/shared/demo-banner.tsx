@@ -1,13 +1,14 @@
-import { demoIdleHours, isDemoMode } from "@/lib/demo-config";
+import { demoIdleHours, isDemoBannerShown, isDemoMode } from "@/lib/demo-config";
 import { REPO_URL } from "@/lib/version";
 
 /**
  * Top banner on the public demo (`npm run demo`). Says the data is fake and
  * private to this visitor, and links the source — the AGPL asks a hosted copy
  * to offer it. Sticky like DevModeBanner and sets the same --zero-banner-h.
+ * `ZERO_DEMO_BANNER=0` hides it for screen recordings.
  */
 export function DemoBanner() {
-  if (!isDemoMode()) return null;
+  if (!isDemoMode() || !isDemoBannerShown()) return null;
   const hours = demoIdleHours();
 
   return (
