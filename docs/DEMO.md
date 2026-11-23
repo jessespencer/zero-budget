@@ -39,8 +39,20 @@ them all. Each sandbox is about the size of the template (a few MB).
 | `ZERO_DEMO_IDLE_HOURS` | `4` | Idle time before a sandbox is deleted (also shown in the banner) |
 | `ZERO_DEMO_MAX_SESSIONS` | `200` | Most sandboxes kept at once |
 | `ZERO_DEMO_DIR` | `data/demo` | Template and sandboxes. Must be inside the checkout |
+| `ZERO_DEMO_BANNER` | on | `0` hides the Demo banner, for screen recordings. Keep it on anywhere the public can reach |
 
 `ZERO_DB_PATH` is ignored: demo mode never opens it.
+
+## Recording videos
+
+The demo doubles as a recording setup: sample data only, and a restart gives
+you a clean slate for the next take. Hide the banner so it isn't in the shot:
+
+```bash
+ZERO_DEMO_BANNER=0 npm run demo
+```
+
+A private window is a second clean copy, for before-and-after shots.
 
 ## Hosting
 

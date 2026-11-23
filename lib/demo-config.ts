@@ -11,6 +11,12 @@ export function isDemoMode(): boolean {
   return process.env.ZERO_DEMO === "1";
 }
 
+/** ZERO_DEMO_BANNER=0 hides the banner, for recording videos on the demo.
+ *  Keep it on anywhere the public can reach. */
+export function isDemoBannerShown(): boolean {
+  return process.env.ZERO_DEMO_BANNER !== "0";
+}
+
 function positiveNumber(raw: string | undefined, fallback: number): number {
   const n = Number(raw);
   return Number.isFinite(n) && n > 0 ? n : fallback;
