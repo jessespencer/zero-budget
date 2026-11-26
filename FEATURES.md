@@ -19,6 +19,8 @@ The core envelope grid. Four columns: **Category**, **Assigned**, **Activity**, 
   plan. Steps tick themselves off from real data; the first checking account becomes
   primary automatically, and **Use starter set** adds three editable groups (Bills,
   Everyday, Savings goals). Dismissible at any point; existing installs never see it.
+- **Explore sample data** on the checklist switches on Demo mode (below), so you can look
+  around a full budget first and come back to your empty one.
 - A new database starts budgeting in the month it was created.
 
 ### Month navigation and header
@@ -435,6 +437,19 @@ Client-side "hide amounts" that masks every figure to `$••••••`. Per
 and applied pre-paint by a blocking inline script, with a CSS blur bridging the gap until
 hydration — so nothing flashes on load. While hidden, every money-writing dialog is hard
 blocked, not just visually masked. A banner explains that amount changes won't be saved.
+
+### Demo mode
+
+Settings → **Demo mode** swaps the whole app to a sample household — fake accounts,
+payees and 13 months of history ending today — so you can screen-share or record without
+showing anything real. Where privacy mode hides the numbers, demo mode hides everything.
+
+It's one switch for the whole install, not per browser: every device sees the sample while
+it's on. A blue banner on every page (including /quick) says so and ends it in one click,
+and it ends by itself after 4 hours. The sample is built fresh each time demo mode starts,
+your real budget is never written while it's on, and anything changed in the demo is
+thrown away when it ends. Not available on the public demo server (`npm run demo`), which
+is sample data already.
 
 ### Undo / redo
 

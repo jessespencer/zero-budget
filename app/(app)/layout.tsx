@@ -3,6 +3,7 @@ import { getPayees } from "./transactions/actions";
 import { catchUpDueSchedules } from "@/lib/schedules-catchup";
 import { getDb, DEFAULT_USER_ID } from "@/lib/db";
 import { mapRows } from "@/lib/db-utils";
+import { getDemoModeStatus } from "@/lib/demo-mode-status";
 import type { Account } from "@/lib/types";
 
 // The (app) tree is a single-user, DB-backed surface — every page reads
@@ -93,6 +94,7 @@ export default async function AppLayout({
       categories={categories}
       categoryGroups={categoryGroups}
       payees={payees}
+      demoMode={getDemoModeStatus()}
     >
       {children}
     </AppShell>

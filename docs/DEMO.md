@@ -11,6 +11,12 @@ npm run build
 npm run demo            # http://localhost:4041
 ```
 
+Just want to show Zero to someone or record it from your own install? You
+don't need this: turn on **Settings → Demo mode** instead, which swaps your
+running app to the same sample household until you end it (see
+[FEATURES.md](../FEATURES.md#demo-mode)). This page is for serving a demo to
+the public.
+
 This is the **only** supported way to put Zero on the open internet. A normal
 install has no login and must stay on a private network ([SECURITY.md](../SECURITY.md)).
 The demo is safe to expose because it never opens a real database: it holds
@@ -41,12 +47,14 @@ them all. Each sandbox is about the size of the template (a few MB).
 | `ZERO_DEMO_DIR` | `data/demo` | Template and sandboxes. Must be inside the checkout |
 | `ZERO_DEMO_BANNER` | on | `0` hides the Demo banner, for screen recordings. Keep it on anywhere the public can reach |
 
-`ZERO_DB_PATH` is ignored: demo mode never opens it.
+`ZERO_DB_PATH` is ignored: the public demo never opens it.
 
 ## Recording videos
 
 The demo doubles as a recording setup: sample data only, and a restart gives
-you a clean slate for the next take. Hide the banner so it isn't in the shot:
+you a clean slate for the next take. Hide the banner so it isn't in the shot
+(the in-app Demo mode always shows its banner, since on a real install it's
+what stops you logging real spending into the sample):
 
 ```bash
 ZERO_DEMO_BANNER=0 npm run demo

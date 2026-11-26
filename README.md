@@ -14,6 +14,7 @@ Zero is envelope budgeting you run yourself. Your whole budget lives in one SQLi
 - **Quick add** — a thumb-sized capture screen that installs on your phone.
 - **Undo that works** — every change reverses exactly, from the toast or with ⌘Z.
 - **Privacy mode** — hide every amount before you share your screen.
+- **Demo mode** — swap to a sample household to show Zero off or record it; your budget is untouched.
 - **Auto-assign** — fund every underfunded category, or copy last month's budget, with a preview first.
 - **Insights** — net worth across accounts and tracked assets, and where the money went.
 - **CSV in, CSV out** — ten bank formats detected automatically, including YNAB register exports.

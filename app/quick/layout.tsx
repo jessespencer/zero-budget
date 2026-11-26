@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import "@fontsource-variable/figtree";
 import { ToastProvider } from "@/components/ui/toast";
+import { DemoModeBanner, DemoModeProvider } from "@/components/shared/demo-mode";
+import { getDemoModeStatus } from "@/lib/demo-mode-status";
 import { RefreshOnVisible } from "./refresh-on-visible";
 import "../globals.css";
 
@@ -25,13 +27,19 @@ export const viewport: Viewport = {
   ],
 };
 
+// Reads the Demo mode switch per request, like the page below it.
+export const dynamic = "force-dynamic";
+
 export default function QuickLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <ToastProvider>
-      <RefreshOnVisible />
-      {children}
-    </ToastProvider>
+    <DemoModeProvider status={getDemoModeStatus()}>
+      <ToastProvider>
+        <DemoModeBanner />
+        <RefreshOnVisible />
+        {children}
+      </ToastProvider>
+    </DemoModeProvider>
   );
 }

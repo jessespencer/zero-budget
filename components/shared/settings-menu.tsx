@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Settings, SunMoon, Users, Eye, EyeOff, Info } from "lucide-react";
+import { Settings, SunMoon, Users, Eye, EyeOff, Info, Presentation } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAmountsHidden } from "@/components/shared/privacy-provider";
+import { StartDemoModeDialog, useDemoMode } from "@/components/shared/demo-mode";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -42,6 +43,8 @@ export function SettingsMenu({
   const [mounted, setMounted] = useState(false);
   const [themeOpen, setThemeOpen] = useState(false);
   const [payeesOpen, setPayeesOpen] = useState(false);
+  const [demoOpen, setDemoOpen] = useState(false);
+  const demoMode = useDemoMode();
 
   // Match ThemeToggle's mounted guard so next-themes hydration lines up.
   useEffect(() => setMounted(true), []);
@@ -89,6 +92,17 @@ export function SettingsMenu({
             )}
             {amountsHidden ? "Show amounts" : "Hide amounts"}
           </DropdownMenuItem>
+          {/* Off: explain first, then switch. On: the banner's button and this
+              item both end it straight away — ending is always safe. */}
+          {demoMode.available && (
+            <DropdownMenuItem
+              disabled={demoMode.pending}
+              onClick={demoMode.active ? demoMode.stop : () => setDemoOpen(true)}
+            >
+              <Presentation className="h-3.5 w-3.5" />
+              {demoMode.active ? "End demo mode" : "Demo mode"}
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem onClick={onOpenAbout}>
             <Info className="h-3.5 w-3.5" />
             About Zero
@@ -97,6 +111,7 @@ export function SettingsMenu({
       </DropdownMenu>
 
       <ThemeDialog open={themeOpen} onOpenChange={setThemeOpen} />
+      <StartDemoModeDialog open={demoOpen} onOpenChange={setDemoOpen} />
 
       {/* Manage payees — controlled via the props added in Task 1 (no default trigger). */}
       <ManagePayeesDialog
